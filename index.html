@@ -1,0 +1,2015 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Poopy — Idle Poop Collector</title>
+<meta name="description" content="Combine feeds, hatch poops, and fill your Poopdex. A cute idle collection game.">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#6B4423">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Poopy">
+<meta property="og:title" content="Poopy — Idle Poop Collector">
+<meta property="og:description" content="Combine feeds, hatch poops, and fill your Poopdex.">
+<!-- BUILD:OG — build.sh가 도메인 인자를 받으면 절대 URL로 치환한다.
+     OG 크롤러는 상대 경로를 못 따라가고 JS도 실행하지 않으므로 절대 URL이어야 한다. -->
+<meta property="og:image" content="https://poopygame.com/assets/icon/icon-512.png">
+<meta property="og:url" content="https://poopygame.com/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<!-- 애드센스 소유권 확인 스니펫 (pub-7085369509523116, 2026-08-19 발급).
+     심사 통과 전에는 광고가 안 나온다 — 이 줄은 "이 사이트가 내 것"임을 증명하는 용도다. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7085369509523116" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" as="style" crossorigin
+ href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<style>
+:root{
+  --ink:#3A2B1C; --dim:#8E7F6D; --line:#E3D3BE; --paper:#FFFBF5;
+  --brown:#8B5A2B; --brownD:#4E3216;
+  --gA:#7CC24A; --gB:#4E9E2E; --gC:#3B7F22;
+  --g1:#9E9E9E; --g2:#4CAF50; --g3:#2196F3; --g4:#9C27B0; --g5:#E0A100;
+  --g6:#FF4081; --gold:#F2B824; --gem:#4FC3F7;
+  /* 타이포 — 크기가 21가지로 흩어져 있던 걸 6단계로 정리했다 */
+  --font:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,
+         'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic','맑은 고딕',system-ui,sans-serif;
+  --fs-xxs:10px;   /* 도감 칸 이름 등 최소 */
+  --fs-xs:11px;    /* 뱃지·보조 수치 */
+  --fs-sm:12px;    /* 부제·설명 */
+  --fs-md:13px;    /* 본문 기본 */
+  --fs-lg:14px;    /* 행 제목 */
+  --fs-xl:16px;    /* 화면 제목 */
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;font-family:var(--font);color:var(--ink);
+  font-size:var(--fs-md);line-height:1.45;letter-spacing:-.01em;
+  word-break:keep-all;overflow-wrap:anywhere;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  background:#20301A;overflow:hidden;overscroll-behavior:none;user-select:none}
+/* 한글은 단어 단위로 끊어야 읽힌다. keep-all 이 없으면 '오브제를' 같은 말이 중간에서 잘린다. */
+h1,h2,h3,p,div,span,button,td,th{word-break:keep-all;overflow-wrap:anywhere}
+/* 숫자는 자리폭을 고정해 타이머·수량이 덜컹거리지 않게 */
+.pentime,.rd,.tc,.cnt,.rcnt,#coins,#gems,#lv{font-variant-numeric:tabular-nums}
+#app{max-width:480px;height:100%;margin:0 auto;display:flex;flex-direction:column;
+  background:var(--paper);position:relative;box-shadow:0 0 40px rgba(0,0,0,.45)}
+
+/* ═ HUD ═ */
+header{background:linear-gradient(180deg,#6B4423,#523118);color:#fff;padding:7px 10px;z-index:8}
+.hrow{display:flex;align-items:center;gap:7px}
+.avatar{width:34px;height:34px;border-radius:11px;background:#8B5A2B;display:flex;align-items:center;
+  justify-content:center;font-size:18px;border:2px solid rgba(255,255,255,.35);flex:none}
+.who{flex:1;min-width:0}
+.wname{font-size:12px;font-weight:800;display:flex;align-items:center;gap:5px}
+.lvchip{background:var(--gold);color:#5A3A00;border-radius:8px;padding:1px 6px;font-size:11px;font-weight:900}
+.xpbar{height:5px;background:rgba(0,0,0,.32);border-radius:3px;overflow:hidden;margin-top:3px}
+.xpbar>i{display:block;height:100%;background:linear-gradient(90deg,#FFD54F,#FF9800);width:0;transition:width .3s}
+.cur{display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.28);border-radius:20px;
+  padding:4px 6px 4px 8px;font-size:12px;font-weight:800;white-space:nowrap}
+.cur .pl{background:rgba(255,255,255,.9);color:#4E3216;border-radius:50%;width:16px;height:16px;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;cursor:pointer}
+.lang{display:flex;background:rgba(0,0,0,.28);border-radius:20px;overflow:hidden}
+.lang button{background:none;border:0;color:#fff;font:inherit;font-size:11px;font-weight:800;padding:4px 7px;cursor:pointer;opacity:.5}
+.lang button.on{background:rgba(255,255,255,.92);color:var(--brownD);opacity:1}
+
+/* ═ 무대 ═ */
+/* z-index를 명시해 무대를 독립된 쌓임 맥락으로 만든다.
+   안 그러면 소품의 z(최대 99)가 무대를 빠져나가 아래 패널·탭바와 겨룬다 */
+#stage{flex:1 1 auto;min-height:150px;position:relative;overflow:hidden;z-index:1;isolation:isolate;
+  background-size:cover;background-position:center 72%;background-repeat:no-repeat;background-color:#BFE7FF}
+#stage.t_grass{background-image:url('assets/bg/grass.webp')}
+#stage.t_sand {background-image:url('assets/bg/sand.webp')}
+#stage.t_snow {background-image:url('assets/bg/snow.webp')}
+#stage.t_night{background-image:url('assets/bg/night.webp')}
+.deco{position:absolute;pointer-events:none}
+.sun{left:8%;top:6%;width:30px;height:30px;border-radius:50%;background:#FFE082;box-shadow:0 0 22px 9px rgba(255,224,130,.55)}
+#stage.t_night .sun{background:#F5F3E7;box-shadow:0 0 20px 7px rgba(245,243,231,.4)}
+.cloud{background:rgba(255,255,255,.85);border-radius:20px;height:14px}
+.hill{left:-6%;top:20%;width:60%;height:16%;border-radius:50% 50% 0 0;background:rgba(255,255,255,.16)}
+.pond{left:50%;top:52%;transform:translateX(-50%);width:56%;height:16%;border-radius:50%;
+  background:radial-gradient(ellipse at 50% 35%,#8ED8F8,#4FB3E3);box-shadow:inset 0 3px 8px rgba(0,0,0,.15)}
+#stage.t_sand .pond{background:radial-gradient(ellipse at 50% 35%,#9FE2F5,#54BBE0)}
+#stage.t_snow .pond{background:radial-gradient(ellipse at 50% 35%,#DFF3FF,#A9D4E9)}
+#stage.t_night .pond{background:radial-gradient(ellipse at 50% 35%,#4E6E9B,#2C4467)}
+.tuft{width:16px;height:10px;background:rgba(0,0,0,.09);border-radius:50% 50% 0 0}
+
+/* 캐릭터와 상태 문구를 한 덩어리로 묶는다.
+   예전엔 문구가 무대 바닥에 고정돼 캐릭터와 멀찍이 떨어졌고, 캐릭터를 옮기면 따로 놀았다. */
+.penview{position:absolute;width:max-content;max-width:82%;
+  transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center}
+.penview .sh{position:absolute;left:50%;transform:translateX(-50%);width:92px;height:17px;border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(20,12,4,.44) 0%,rgba(20,12,4,.17) 58%,rgba(20,12,4,0) 74%);
+  z-index:0;pointer-events:none}
+.penview img{width:min(120px,28vh);height:min(120px,28vh);object-fit:contain;position:relative;z-index:1;transform-origin:50% 100%;
+  filter:drop-shadow(0 5px 6px rgba(0,0,0,.22));cursor:pointer}
+@keyframes breathe{0%,100%{transform:translateY(0) scale(1,1)}30%{transform:translateY(-7px) scale(.96,1.05)}
+  55%{transform:translateY(0) scale(1.05,.95)}75%{transform:translateY(0) scale(.99,1.01)}}
+.breathe{animation:breathe 2.3s ease-in-out infinite}
+@keyframes squash{0%{transform:scale(1,1)}18%{transform:scale(1.2,.78)}
+  45%{transform:translateY(-28px) scale(.88,1.16)}70%{transform:translateY(0) scale(1.1,.92)}100%{transform:scale(1,1)}}
+.squash{animation:squash .5s cubic-bezier(.3,1.4,.4,1)}
+@keyframes pop{0%{transform:scale(.2) rotate(-18deg);opacity:0}60%{transform:scale(1.22)}100%{transform:scale(1)}}
+.pop{animation:pop .45s}
+.pentime{font-size:12px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;margin-top:5px;
+  background:rgba(30,20,10,.5);padding:3px 12px;border-radius:20px;white-space:nowrap;
+  backdrop-filter:blur(2px)}
+.pill .pn{opacity:.72;margin:0 2px}
+.pill .ps{font-weight:900}
+.penbar{width:100%;max-width:132px;height:6px;background:rgba(0,0,0,.3);border-radius:4px;
+  overflow:hidden;margin-top:5px;align-self:center}
+.penbar>i{display:block;height:100%;background:linear-gradient(90deg,#FFD54F,#FF9800);width:0}
+.pill{position:absolute;z-index:150;left:50%;transform:translateX(-50%);top:6px;background:rgba(0,0,0,.42);color:#fff;
+  border-radius:20px;padding:4px 13px;font-size:12px;font-weight:800;display:flex;gap:6px;align-items:center}
+.objdeco{position:absolute;transform:translate(-50%,-100%);font-size:34px;line-height:1.25;
+  filter:drop-shadow(0 4px 5px rgba(0,0,0,.32));pointer-events:none;z-index:0}
+.objdeco img{width:var(--osz,56px);height:var(--osz,56px);object-fit:contain;display:block}
+.objdeco.editing{pointer-events:auto;cursor:grab;touch-action:none;
+  outline:2px dashed rgba(255,255,255,.9);outline-offset:3px;border-radius:8px;z-index:6}
+.editbar{position:absolute;left:50%;transform:translateX(-50%);top:40px;z-index:160;
+  display:flex;align-items:center;gap:7px;white-space:nowrap;
+  background:linear-gradient(180deg,#FFF8EC,#FBEBD0);color:var(--brownD);
+  border:2px solid #E3C69A;border-radius:22px;padding:5px 14px 5px 9px;
+  font-size:12px;font-weight:900;letter-spacing:-.2px;
+  box-shadow:0 3px 0 rgba(140,104,60,.28),0 6px 12px rgba(0,0,0,.16)}
+.editbar .eb-ic{display:inline-flex;align-items:center;justify-content:center;
+  width:21px;height:21px;border-radius:50%;background:#F3D9AE;font-size:13px;
+  animation:ebwave 1.6s ease-in-out infinite}
+@keyframes ebwave{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
+.penview.editing{pointer-events:auto;cursor:grab;touch-action:none;
+  outline:2px dashed rgba(255,255,255,.95);outline-offset:5px;border-radius:14px;z-index:6;
+  background:rgba(255,255,255,.10)}
+.eggbadge{position:absolute;right:12px;top:4px;background:#FFF1BF;color:#7A5300;border-radius:20px;
+  padding:4px 11px 4px 9px;font-size:13px;font-weight:900;border:2px solid #F0C24A;
+  box-shadow:0 2px 6px rgba(0,0,0,.22)}
+.speedbar{position:absolute;left:0;right:0;bottom:8px;display:flex;gap:7px;padding:0 12px;z-index:155}
+.speedbar .poopbtn{background:linear-gradient(180deg,#E0A100,#B47C00);font-size:14px;padding:12px 8px;
+  animation:bpulse 1.3s ease-in-out infinite}
+@keyframes bpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+.speedbar .btn{flex:1 1 0 !important;min-width:0;box-shadow:0 3px 8px rgba(0,0,0,.28);
+  padding:9px 6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.coinpop{position:absolute;top:42%;left:50%;transform:translateX(-50%);background:var(--gold);color:#5A3A00;
+  border-radius:20px;padding:5px 14px;font-size:14px;font-weight:900;box-shadow:0 3px 8px rgba(0,0,0,.25);
+  display:none;z-index:3}
+.coinpop.on{display:block;animation:pop .4s}
+.emptyhint{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);text-align:center;color:#fff;
+  font-size:14px;font-weight:800;line-height:1.7;background:rgba(30,20,10,.5);padding:11px 20px;
+  border-radius:18px;backdrop-filter:blur(2px);max-width:88%;white-space:pre-line}
+.arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.32);color:#fff;border:0;
+  width:30px;height:44px;font-size:16px;cursor:pointer;z-index:140}
+.arrow.l{left:0;border-radius:0 12px 12px 0}
+.arrow.r{right:0;border-radius:12px 0 0 12px}
+.lockbig{position:absolute;inset:34% 0 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}
+.lockbig .lk{font-size:44px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.3))}
+.lockbig .lt{color:#fff;font-size:13px;font-weight:800;text-shadow:0 2px 3px rgba(0,0,0,.4);text-align:center;line-height:1.6}
+
+/* ═ 하위탭 ═ */
+.seg{display:flex;gap:5px;padding:7px 9px 0;background:var(--paper)}
+.seg button{flex:1;background:#F1E6D6;border:0;border-radius:11px 11px 0 0;font:inherit;font-size:12px;
+  font-weight:800;color:#8E7F6D;padding:8px 2px;cursor:pointer}
+.seg button.on{background:#fff;color:var(--brownD);box-shadow:0 -2px 0 var(--brown) inset}
+
+/* ═ 패널 ═ */
+#panel{flex:0 0 auto;height:clamp(190px,34vh,320px);min-height:0;background:var(--paper);display:flex;flex-direction:column;z-index:4;border-top:2px solid var(--line)}
+.pbody{flex:1;overflow-y:auto;padding:9px 10px 14px;-webkit-overflow-scrolling:touch;
+  -webkit-mask-image:linear-gradient(180deg,#000 0,#000 calc(100% - 16px),transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0,#000 calc(100% - 16px),transparent 100%)}
+.ptitle{padding:9px 12px 0;font-size:var(--fs-xl);font-weight:800;color:var(--brownD);
+  letter-spacing:-.02em;line-height:1.3;
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+#helpbtn{background:#F1E6D6;border:0;border-radius:9px;color:var(--brownD);font:inherit;font-size:11px;
+  font-weight:800;padding:5px 9px;cursor:pointer;display:none}
+#helpbtn.on{display:inline-block}
+.psub{padding:3px 12px 0;font-size:var(--fs-sm);color:var(--dim);line-height:1.5;
+  max-width:36em}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.tile{border:2px solid var(--line);background:#fff;border-radius:12px;padding:6px 3px 5px;text-align:center;
+  cursor:pointer;position:relative;transition:.1s}
+.tile.sel{background:var(--brown);color:#fff;border-color:var(--brown);transform:translateY(-2px)}
+.tile.dis{opacity:.38}
+.tile .ti{font-size:21px;line-height:1.25}
+/* 똥 먹이 썸네일 — 원본이 128px라 크기를 안 잡으면 그대로 튀어나온다 */
+.pfimg{width:26px;height:26px;object-fit:contain;vertical-align:middle;max-width:100%;max-height:100%}
+.tile .pfimg{width:26px;height:26px}
+.tile.pf{border-color:#C9A227;background:#FFFBEF}
+.tile.pf.sel{background:var(--brown);border-color:var(--brown)}
+.tile .tn{font-size:var(--fs-xs);font-weight:700;margin-top:3px;line-height:1.3}
+.tile .tc{font-size:var(--fs-xxs);opacity:.8;margin-top:1px;line-height:1.3}
+.cnt{position:absolute;top:-5px;right:-4px;background:var(--brownD);color:#fff;font-size:11px;font-weight:900;
+  border-radius:9px;padding:1px 5px;min-width:18px}
+.tile.sel .cnt{background:#fff;color:var(--brownD)}
+.actbar{display:flex;align-items:center;gap:7px;padding:7px 10px;border-top:1px solid var(--line);background:#fff}
+.slotpick{border:2px dashed var(--line);border-radius:11px;width:42px;height:42px;display:flex;align-items:center;
+  justify-content:center;font-size:18px;color:var(--dim);flex:none}
+.slotpick.has{border-style:solid;border-color:var(--brown);overflow:hidden}
+.slotpick .pfimg{width:32px;height:32px}
+.slotpick.lock{border-style:solid;border-color:var(--line);background:#efe6da;opacity:.75;font-size:16px}
+.rgroup{display:flex;align-items:center;gap:8px;background:#f1e6d7;border:1px solid var(--line);
+  border-radius:10px;padding:6px 10px;margin:7px 0 3px;cursor:pointer;user-select:none}
+.rgroup.open{background:#e9dbc6}
+.rgroup.dim{opacity:.62}
+.rgroup .rn{font-size:var(--fs-lg);font-weight:800;color:var(--brownD);
+  display:flex;align-items:center;gap:6px;letter-spacing:-.02em}
+.rgroup .rd{font-size:var(--fs-sm);color:var(--dim);margin-top:2px}
+.btn .b1{display:block;line-height:1.3}
+.btn .b2{display:block;font-size:11px;font-weight:800;opacity:.85;line-height:1.2;margin-top:1px}
+.rcnt{font-size:11px;font-weight:800;color:#fff;background:var(--brown);border-radius:20px;padding:1px 7px}
+.ogr{font-size:11px;font-weight:900;color:#fff;border-radius:20px;padding:1px 6px;margin-left:4px}
+.ogr.g0{background:#9E9E9E}.ogr.g1{background:#4CAF50}.ogr.g2{background:#2196F3}.ogr.g3{background:#9C27B0}
+.rarrow{font-size:13px;color:var(--dim);font-weight:900}
+.row.sub{margin-left:14px}
+.btn{border:0;border-radius:12px;background:var(--brown);color:#fff;font:inherit;font-weight:900;padding:11px 13px;
+  cursor:pointer;font-size:14px;flex:1}
+.btn.g{background:#2E7D32}.btn.o{background:#EF6C00}.btn.b{background:#1565C0}
+/* 색 버튼 규칙보다 뒤에 둬야 이긴다. 앞에 두면 비활성인데 초록으로 남아 눌리는 줄 안다 */
+.btn:disabled,.btn.g:disabled,.btn.o:disabled,.btn.b:disabled{
+  background:#CFC0AE;color:#F3EDE4;cursor:default;opacity:1}
+.btn.ghost{background:#fff;color:var(--brownD);border:2px solid var(--line)}
+.btn.sm{padding:8px 11px;font-size:12px;flex:none}
+.row{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:12px;
+  padding:9px 10px;margin-bottom:6px}
+.row.done{background:#F2F8F1;border-color:#CFE3CB}
+.row .ri{font-size:21px;width:28px;text-align:center;flex:none}
+.row .rt{flex:1;min-width:0}
+.row .rn{font-size:var(--fs-lg);font-weight:700;line-height:1.35;letter-spacing:-.02em}
+.row .rd{font-size:var(--fs-sm);color:var(--dim);margin-top:3px;line-height:1.45}
+.mini{height:5px;background:#EFE4D6;border-radius:3px;overflow:hidden;margin-top:4px}
+.mini>i{display:block;height:100%;background:linear-gradient(90deg,#8B5A2B,#E0A100)}
+.ok{font-size:11px;font-weight:900;color:#2E7D32}
+.dcell{background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px 2px 3px;text-align:center;
+  position:relative;cursor:pointer}
+.dcell img{width:100%;max-width:44px;height:42px;object-fit:contain}
+.ricon{width:30px;height:30px;object-fit:contain;flex:none}
+.ricon.silh{filter:grayscale(1) brightness(.15) opacity(.42)}
+.rem{font-size:21px;line-height:1}
+.qmt{color:#B5A48F;font-weight:800}
+.qm{width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:#EDE2D2;border-radius:9px;font-weight:900;color:#B5A48F;font-size:16px}
+.dcell .dn{font-size:var(--fs-xxs);font-weight:600;line-height:1.25;height:21px;overflow:hidden;
+  color:var(--brownD);margin-top:2px;letter-spacing:-.03em}
+.dcell.lock .dn{color:#C3B6A5}
+.dcell.lock img{filter:grayscale(1) brightness(.12) opacity(.34)}
+.dot{width:6px;height:6px;border-radius:50%;position:absolute;top:3px;right:3px}
+/* 오른쪽 아래에 두면 '개똥벌레똥' 같은 긴 이름의 끝을 덮는다. 등급 점 반대편 위로 올린다 */
+.have{position:absolute;top:3px;left:3px;background:var(--brownD);color:#fff;font-size:10px;font-weight:900;
+  border-radius:8px;padding:1px 5px;box-shadow:0 1px 3px rgba(0,0,0,.25);line-height:1.35}
+.helpbox{font-size:var(--fs-md);line-height:1.7;color:#6A5A48;
+  background:#FFFDF8;border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+.helpbox b{color:var(--brownD)}
+/* 소제목(배경 / 내 오브제) — 이것도 규칙이 없어 맨 글자로 떴다 */
+.rhead{display:flex;align-items:baseline;gap:6px;
+  font-size:var(--fs-sm);font-weight:800;color:var(--brownD);letter-spacing:-.01em;
+  margin:14px 2px 7px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.rhead:first-child{margin-top:2px}
+.penpick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.penpick .btn{padding:7px 4px;min-height:44px}
+/* 안내 박스 — 클래스만 쓰이고 규칙이 없어서 서식 없는 맨 글자로 나왔다 */
+.regen{display:flex;align-items:flex-start;gap:7px;
+  background:#FFFDF6;border:1px solid var(--line);border-radius:12px;
+  padding:9px 12px;margin:8px 0;font-size:var(--fs-sm);line-height:1.55;color:#6E5F4C}
+.regen b{color:var(--brownD);font-weight:800;font-variant-numeric:tabular-nums}
+.helpbox ol{margin:5px 0 10px;padding-left:18px}
+.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-sm);margin-top:8px}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:left}
+.tbl th{color:var(--dim);font-weight:700;font-size:var(--fs-xs);letter-spacing:.02em}
+.tbl td.r{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* ═ 광고 ═ */
+#legal{flex:none;text-align:center;background:#F3EADE;padding:3px 6px 5px;font-size:10px;line-height:1.5}
+#legal a{color:#A8977F;text-decoration:none}
+#legal a:hover{text-decoration:underline}
+#legal .sep{color:#D3C4AE;margin:0 5px}
+/* 승인 전에는 자리만 잡고 아무것도 안 보인다.
+   "광고 배너 자리"라고 써 붙여두면 플레이어한테는 군더더기고, 심사자한테도 좋을 게 없다. */
+#adbanner{flex:none;height:0;overflow:hidden;background:#F3EADE;display:flex;align-items:center;
+  justify-content:center;color:#BCAB96;font-size:11px;z-index:5}
+#adbanner.live{height:46px;border-top:1px solid var(--line)}
+.adcard{background:linear-gradient(135deg,#2E7D32,#1B5E20);color:#fff;border-radius:13px;padding:11px 12px;
+  display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.adcard .ai{font-size:21px}
+.adcard .at{flex:1}
+.adcard .an{font-size:12px;font-weight:900}
+.adcard .ad2{font-size:11px;opacity:.85;margin-top:2px}
+.adcard button{background:#fff;color:#1B5E20;border:0;border-radius:10px;font:inherit;font-weight:900;
+  font-size:12px;padding:8px 12px;cursor:pointer}
+.adcard button:disabled{opacity:.5}
+.adcard.kofi{background:#FF5E5B}   /* Ko-fi 색 — 광고 초록과 헷갈리지 않게 */
+.adcard.kofi button{background:#fff;color:#D84B48}
+
+/* ═ 탭바 ═ */
+#tabs{flex:none;display:flex;background:var(--brownD);padding-bottom:env(safe-area-inset-bottom);z-index:9}
+#tabs button{flex:1;background:none;border:0;color:#E4D3BE;font:inherit;padding:8px 2px 7px;cursor:pointer;
+  opacity:.6;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+#tabs button .ti2{font-size:18px;line-height:1}
+#tabs button .tn2{font-size:11px;font-weight:800}
+#tabs button.on{opacity:1;background:rgba(255,255,255,.13);color:#fff}
+#tabs button.mini-tab{flex:0 0 46px;border-left:1px solid rgba(255,255,255,.14)}
+.bell{position:absolute;top:5px;right:24%;width:8px;height:8px;border-radius:50%;background:#E53935;display:none}
+#tabs button.alert .bell{display:block}
+
+/* ═ 모달 ═ */
+.modal{position:fixed;inset:0;background:rgba(30,22,10,.62);display:none;align-items:center;justify-content:center;z-index:60;padding:18px}
+.modal.on{display:flex}
+.card{background:var(--paper);border-radius:20px;padding:18px;max-width:330px;width:100%;
+  box-shadow:0 12px 40px rgba(0,0,0,.32);animation:pop .32s;max-height:86vh;overflow-y:auto}
+.card.c{text-align:center}
+.card img.big{width:118px;height:118px;object-fit:contain}
+.card h3{margin:6px 0 2px;font-size:16px}
+.cg{font-size:11px;font-weight:900;color:#fff;border-radius:10px;padding:3px 10px;display:inline-block}
+.card p.desc{font-size:12px;color:#7A6A58;line-height:1.65;margin:9px 0 12px;white-space:pre-line}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--brownD);color:#fff;
+  padding:9px 16px;border-radius:22px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;
+  transition:opacity .25s;z-index:70;max-width:86vw;text-align:center;line-height:1.5;white-space:pre-line}
+.toast.on{opacity:.96}
+
+/* 화면이 낮을 때 — 작은 폰·가로모드에서 잘리지 않게 */
+@media (max-height:620px){
+  #adbanner{display:none}   /* 배너는 숨겨도 #legal 링크는 남긴다 */
+  #panel{height:clamp(170px,40vh,260px)}
+  .seg button{padding:6px 2px;font-size:11px}
+  .ptitle{padding-top:6px;font-size:12px}
+  .psub{display:none}
+}
+@media (max-height:470px){
+  #stage{min-height:110px}
+  .penview img{width:min(84px,26vh);height:min(84px,26vh)}
+  #tabs button{padding:5px 2px 4px}
+  #tabs button .ti2{font-size:16px}
+  #tabs button .tn2{font-size:11px}
+  header{padding:4px 10px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="hrow">
+      <div class="avatar">💩</div>
+      <div class="who">
+        <div class="wname"><span class="lvchip" id="lv">Lv.1</span><span id="pname">Poopy</span></div>
+        <div class="xpbar"><i id="xpbar"></i></div>
+      </div>
+      <div class="cur">🪙 <span id="coins">0</span><span class="pl" data-shop="coin">+</span></div>
+      <div class="cur">💎 <span id="gems">0</span><span class="pl" data-shop="gem">+</span></div>
+      <div class="lang"><button id="snd" class="on">🔊</button><button id="lko" class="on">KO</button><button id="len">EN</button></div>
+    </div>
+  </header>
+
+  <div id="stage">
+    <div class="pill" id="pill"></div>
+    <button class="arrow l" id="prev">‹</button>
+    <button class="arrow r" id="next">›</button>
+    <div class="coinpop" id="coinpop"></div>
+    <div id="stagebody"></div>
+  </div>
+
+  <div class="seg" id="seg"></div>
+  <div id="panel">
+    <div class="ptitle" id="ptitle"><span id="ptxt"></span><button id="helpbtn">❓ <span data-i="tabHelp"></span></button></div>
+    <div class="psub" id="psub"></div>
+    <div class="pbody" id="pbody"></div>
+    <div class="actbar" id="actbar" style="display:none">
+      <div class="slotpick" id="p0">+</div>
+      <div class="slotpick" id="p1">+</div>
+      <button class="btn" id="go" disabled></button>
+    </div>
+  </div>
+
+  <!-- AdSense 앵커 배너 자리: 승인 후 이 안에 <ins class="adsbygoogle"> 삽입 -->
+  <div id="adbanner" data-i="adBanner"></div>
+  <!-- AdSense 심사에서 개인정보처리방침 링크가 보이는 곳에 있어야 한다 -->
+  <!-- 게임 밖 읽을거리로 나가는 문. 애드센스 심사에도, 실제 플레이어한테도 필요하다 -->
+  <div id="legal">
+    <a href="guide.html" data-i="navGuide"></a><span class="sep">·</span>
+    <a href="species.html" data-i="navDex"></a><span class="sep">·</span>
+    <a href="devlog.html" data-i="navLog"></a><span class="sep">·</span>
+    <a href="privacy.html" data-i="privacy"></a>
+  </div>
+
+  <div id="tabs">
+    <button data-tab="home"><span class="ti2">🏠</span><span class="tn2" data-i="tabHome"></span><span class="bell"></span></button>
+    <button data-tab="dex"><span class="ti2">📖</span><span class="tn2" data-i="tabDex"></span><span class="bell"></span></button>
+    <button data-tab="shop"><span class="ti2">🏪</span><span class="tn2" data-i="tabShop"></span><span class="bell"></span></button>
+    <button data-tab="quest"><span class="ti2">🎯</span><span class="tn2" data-i="tabQuest"></span><span class="bell"></span></button>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="card" id="mcard"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════ 저장소 ════════ */
+const Store=(()=>{let mem={},ok=true;
+  try{localStorage.setItem('__t','1');localStorage.removeItem('__t');}catch(e){ok=false;}
+  return{get:k=>{try{return ok?localStorage.getItem(k):(mem[k]??null);}catch(e){return mem[k]??null;}},
+         set:(k,v)=>{try{ok?localStorage.setItem(k,v):mem[k]=v;}catch(e){mem[k]=v;}},
+         del:k=>{try{ok?localStorage.removeItem(k):delete mem[k];}catch(e){delete mem[k];}}};})();
+const KEY='poopy_v2';
+
+/* ════════ 상수 ════════ */
+const MAX_PENS=6;
+const PENS=[{t:'free'},{t:'quest',need:5},{t:'quest',need:12},
+            {t:'iap',p:{ko:'₩1,900',en:'$1.99'}},{t:'iap',p:{ko:'₩3,900',en:'$3.99'}},{t:'iap',p:{ko:'₩5,900',en:'$5.99'}}];
+const GC=['var(--g1)','var(--g2)','var(--g3)','var(--g4)','var(--g5)','var(--g6)'];
+const GT=[180,600,1800,7200,21600,43200]; // 배출 시간(초) 3분/10분/30분/2시간/6시간/12시간
+// 거름 판매가 — 소화 시간에 완만히 비례(시간당 300→833)하되 희소도가 얹힘
+const SELL=[15,55,220,1200,4000,10000];
+const GXP=[10,32,95,300,950,2400];          // 배출 경험치
+const MAX_LV=90;                      // 최대 레벨                    // 최대 대기 마리
+const REGEN_MS=12*60*1000, REGEN_CAP=18;   // 15분마다 1개, 최대 15개
+const BASIC=['grass','bug'];
+const FOODS=[
+ {id:'grass',ic:'🌿',tier:1,cost:0},{id:'bug',ic:'🐛',tier:1,cost:0},
+ {id:'meat',ic:'🍖',tier:2,cost:35},{id:'fish',ic:'🐟',tier:2,cost:15},
+ {id:'feed',ic:'🥫',tier:3,cost:22},{id:'junk',ic:'🍔',tier:4,cost:55}];
+// 등급별 분해 보상
+const BREAK=[['meat',1],['feed',1],['feed',3],['junk',3],['junk',10],['junk',30]];
+// 오브제 — g:등급(0일반 1고급 2희귀 3유니크) sz:화면 표시 배율 src:획득 경로
+// 가격은 크기와 등급을 함께 반영한다. 작고 흔한 건 싸고, 크거나 특이한 건 비싸다.
+const OBJ_G=['일반','고급','희귀','유니크'];
+const OBJECTS=[
+ // 작고 싼 소품
+ {id:'fly',    ic:'🪰',g:0,sz:.42,cost:120,  cur:'coin'},
+ {id:'flower', ic:'🌷',g:0,sz:.72,cost:220,  cur:'coin'},
+ {id:'mushroom',ic:'🍄',g:0,sz:.55,cost:260, cur:'coin'},
+ {id:'paper',  ic:'🧻',g:0,sz:.5, cost:300,  cur:'coin'},
+ // 중간
+ {id:'fence',  ic:'🪵',g:1,sz:.9, cost:700,  cur:'coin'},
+ {id:'bucket', ic:'🪣',g:1,sz:.62,cost:850,  cur:'coin'},
+ {id:'sign',   ic:'🪧',g:1,sz:.78,cost:1100, cur:'coin'},
+ {id:'toilet', ic:'🚽',g:1,sz:.95,cost:1600, cur:'coin'},
+ // 크고 비싼 것
+ {id:'tree',   ic:'🌳',g:2,sz:1.25,cost:3200, cur:'coin'},
+ {id:'pig',    ic:'🐷',g:2,sz:1.05,cost:4500, cur:'coin'},
+ {id:'lamp',   ic:'🏮',g:2,sz:.85,cost:12,   cur:'gem'},
+ // 퀘스트로만
+ {id:'trophy', ic:'🏆',g:3,sz:.8, cost:0,    cur:'quest'},
+ {id:'crown',  ic:'👑',g:3,sz:.6, cost:0,    cur:'quest'}];
+const objDef=id=>OBJECTS.find(o=>o.id===id);
+// 캐릭터와 이름표(가로 30~62% · 세로 58~100%)를 피한 기본 자리. 13개까지 돌려쓴다
+// 캐릭터 기본 자리 — 배경 오른쪽 물가를 피해 왼쪽 잔디밭에 앉힌다
+const POOP_HOME=[44,92];
+const OBJ_POS=[[13,84],[87,82],[22,68],[78,66],[68,93],[30,95],
+               [8,70],[92,68],[16,95],[84,95],[26,58],[74,57],[50,52]];
+const THEMES=[
+ {id:'grass',ic:'🌱',cost:0,cur:'coin'},{id:'sand',ic:'🏖️',cost:2500,cur:'coin'},
+ {id:'snow',ic:'❄️',cost:8000,cur:'coin'},{id:'night',ic:'🌙',cost:25,cur:'gem'}];
+const SPECIES=[
+ [1,'firefly','개똥벌레똥','Firefly Poop',0,'꽁무니가 희미하게 빛난다. 야광 인자의 원천.','Its tail glows faintly. The source of the glow gene.'],
+ [2,'rat','쥐똥','Rat Poop',0,'가장 흔한 출발점. 어디에나 있다.','The most common starting point. Found everywhere.'],
+ [3,'sparrow','참새똥','Sparrow Poop',0,'하늘에서 떨어진다. 맞으면 운이 좋다던데.','Falls from the sky. They say it means good luck.'],
+ [4,'pigeon','비둘기똥','Pigeon Poop',0,'동상 위에서 자주 발견된다. 무표정하다.','Often found on statues. Utterly unbothered.'],
+ [5,'worm','지렁이똥','Worm Cast',0,'흙을 먹고 흙을 싼다. 밭을 기름지게 한다.','Eats soil, makes soil. Enriches the field.'],
+ [6,'snail','달팽이똥','Snail Poop',0,'느리게 자란다. 대신 껍질이 예쁘다.','Grows slowly, but the shell is lovely.'],
+ [7,'ant','개미똥','Ant Poop',0,'작지만 성실하다. 늘 무언가 나르고 있다.','Tiny but diligent. Always carrying something.'],
+ [10,'roach','바퀴똥','Roach Poop',0,'어두운 곳을 좋아한다. 놀랍도록 튼튼하다.','Loves the dark. Disturbingly sturdy.'],
+ [15,'cricket','귀뚜라미똥','Cricket Poop',0,'밤이 되면 시끄러워진다.','Gets loud after sunset.'],
+ [17,'hamster','햄스터똥','Hamster Poop',0,'볼주머니에 먹이를 숨겨둔다.','Hides snacks in its cheek pouches.'],
+ [18,'squirrel','다람쥐똥','Squirrel Poop',0,'어디에 묻었는지 자기도 까먹는다.','Forgets where it buried things.'],
+ [19,'rabbit','토끼똥','Rabbit Pellet',0,'동글동글 여러 알. 밭에 좋은 거름.','Round little pellets. Great fertilizer.'],
+ [20,'hedgehog','고슴도치똥','Hedgehog Poop',0,'겁이 많다. 놀라면 몸을 만다.','Timid. Curls up when startled.'],
+ [21,'ladybug','무당벌레똥','Ladybug Poop',0,'점 개수는 매번 다르다.','The number of dots is never the same.'],
+ [22,'frog','개구리똥','Frog Poop',0,'눈이 몸보다 크다. 표정이 없다.','Eyes bigger than its body. Zero expression.'],
+ [23,'lizard','도마뱀똥','Lizard Poop',0,'끝이 하얀 게 특징. 꼬리는 다시 자란다.','White tip is the tell. The tail grows back.'],
+ [31,'dog','개똥','Dog Poop',1,'주인을 무척 반긴다. 밟으면 하루가 망한다.','Adores its owner. Ruins your day if stepped on.'],
+ [32,'cat','고양이똥','Cat Poop',1,'반드시 파묻는다. 도도하다.','Always buries itself. Extremely aloof.'],
+ [34,'chicken','닭똥','Chicken Poop',1,'벼슬이 자랑거리. 새벽마다 운다.','Proud of its comb. Crows at dawn.'],
+ [35,'duck','오리똥','Duck Poop',1,'물가에서 발견된다. 물에 잘 뜬다.','Found by the water. Floats surprisingly well.'],
+ [38,'goat','염소똥','Goat Pellet',1,'뭐든 씹는다. 종이도 먹는다.','Chews anything. Paper included.'],
+ [40,'pig','돼지똥','Pig Poop',1,'행복해 보인다. 실제로 행복하다.','Looks happy. Actually is happy.'],
+ [41,'parrot','앵무새똥','Parrot Poop',1,'주인 말을 따라한다. 색이 화려하다.','Repeats what you say. Wildly colorful.'],
+ [47,'peacock','공작똥','Peacock Poop',1,'꼬리를 펼치면 다들 쳐다본다.','Everyone stares when it fans its tail.'],
+ [48,'raccoon','너구리똥','Raccoon Poop',1,'쓰레기통을 뒤진 흔적이 그대로 남아 있다.','Still shows traces of the trash it raided.'],
+ [49,'fox','여우똥','Fox Poop',1,'영리하다. 웃고 있으면 뭔가 꾸미는 중.','Clever. If it smiles, it is plotting.'],
+ [204,'beetle','쇠똥구리똥','Dung Beetle Poop',1,'똥을 굴리던 것이 똥이 됐다. 조합으로만 만난다.','The one that rolled dung became dung. Crafting only.'],
+ [56,'cow','소똥','Cow Pat',2,'짚이 섞여 있다. 말리면 연료가 된다.','Mixed with straw. Dries into fuel.'],
+ [57,'horse','말똥','Horse Apple',2,'김이 모락모락. 버섯이 잘 자란다.','Still steaming. Mushrooms love it.'],
+ [60,'elephant','코끼리똥','Elephant Dung',2,'하루 100kg. 종이로도 만든다.','100kg a day. Can be made into paper.'],
+ [62,'hippo','하마똥','Hippo Dung',2,'꼬리로 흩뿌린다. 물속이 온통 뿌옇다. 조합으로만 만난다.','Sprayed with its tail. Clouds the river. Crafting only.'],
+ [75,'penguin','펭귄똥','Penguin Guano',2,'구아노. 남극에서는 위성으로 찾는다.','Guano. Visible from satellites in Antarctica.'],
+ [205,'hornet','말벌똥','Hornet Poop',2,'노란 줄무늬. 가까이 가면 위험하다. 조합으로만 만난다.','Yellow stripes. Do not get close. Crafting only.'],
+ [206,'sealion','물개똥','Sea Lion Poop',2,'비린내가 강하다. 늘 물에 젖어 있다. 조합으로만 만난다.','Strong fishy smell, always damp. Crafting only.'],
+ [76,'human','휴먼똥','Human Poop',3,'안경과 넥타이. 오늘도 출근했다.','Glasses and a tie. Went to work again today.'],
+ [78,'gold','황금똥','Golden Poop',3,'꿈에 나오면 복권을 사라고 한다.','Dream of it and they say to buy a lottery ticket.'],
+ [86,'rainbow','무지개똥','Rainbow Poop',3,'여러 색 유전자가 한꺼번에 발현됐다.','Many color genes expressed all at once.'],
+ [207,'platypus','오리너구리똥','Platypus Poop',3,'부리와 털가죽이 한 몸에. 분류를 포기했다. 조합으로만 만난다.','Bill and fur in one body. Taxonomists gave up. Crafting only.'],
+ [89,'dino','공룡똥','Coprolite',4,'화석화된 똥. 6천만 년을 기다렸다.','A fossilized dropping. It waited 60 million years.'],
+ [90,'mammoth','매머드똥','Mammoth Dung',4,'영구동토에서 언 채로 발견됐다.','Found frozen in the permafrost.'],
+ [93,'unicorn','유니콘똥','Unicorn Poop',4,'만지면 행운이 온다. 아무도 못 만져봤다.','Touch it for luck. Nobody ever has.'],
+ [94,'dragon','드래곤똥','Dragon Dung',4,'아직 뜨겁다. 만지지 말 것.','Still hot. Do not touch.'],
+ [95,'phoenix','불사조똥','Phoenix Ash',4,'재가 되어도 다시 뭉친다. 조합으로만 만난다.','Turns to ash, then pulls itself back together. Crafting only.'],
+ [201,'magma','마그마똥','Magma Poop',5,'퀘스트로만 만날 수 있는 유니크. 속이 아직 끓고 있다.','A quest-only unique. Still bubbling inside.'],
+ [202,'abyss','심해똥','Abyss Poop',5,'퀘스트로만 만날 수 있는 유니크. 깊은 바다의 압력을 견뎠다.','A quest-only unique. It survived the deep-sea pressure.'],
+ [203,'sprout','새싹똥','Sprout Poop',5,'퀘스트로만 만날 수 있는 유니크. 등에서 새싹이 자란다.','A quest-only unique. A sprout grows on its back.']];
+const BY_GRADE=[[],[],[],[],[],[]];SPECIES.forEach(s=>BY_GRADE[s[4]].push(s));
+const RECIPE=[
+ {pa:1,f:['grass'],no:21,p:0.45,k:'a'},
+ {pa:21,f:['bug'],no:1,p:0.45,k:'a'},
+ {pa:7,f:['grass'],no:15,p:0.40,k:'a'},
+ {pa:15,f:['bug'],no:22,p:0.40,k:'a'},
+ {pa:5,f:['grass'],no:6,p:0.45,k:'a'},
+ {pa:6,f:['grass'],no:5,p:0.50,k:'a'},
+ {pa:2,f:['grass'],no:19,p:0.45,k:'a'},
+ {pa:2,f:['feed'],no:17,p:0.45,k:'a'},
+ {pa:17,f:['grass'],no:18,p:0.45,k:'a'},
+ {pa:18,f:['grass'],no:19,p:0.40,k:'a'},
+ {pa:19,f:['grass'],no:38,p:0.30,k:'a'},
+ {pa:20,f:['bug'],no:2,p:0.35,k:'a'},
+ {pa:3,f:['bug'],no:34,p:0.45,k:'a'},
+ {pa:3,f:['grass'],no:4,p:0.45,k:'a'},
+ {pa:4,f:['feed'],no:34,p:0.40,k:'a'},
+ {pa:10,f:['junk'],no:2,p:0.40,k:'a'},
+ {pa:22,f:['bug'],no:23,p:0.45,k:'a'},
+ {pa:23,f:['bug'],no:22,p:0.35,k:'a'},
+ {pa:31,f:['feed'],no:32,p:0.40,k:'a'},
+ {pa:32,f:['fish'],no:49,p:0.40,k:'a'},
+ {pa:49,f:['meat'],no:31,p:0.35,k:'a'},
+ {pa:49,f:['junk'],no:48,p:0.40,k:'a'},
+ {pa:34,f:['fish'],no:35,p:0.40,k:'a'},
+ {pa:34,f:['feed'],no:47,p:0.35,k:'a'},
+ {pa:41,f:['feed'],no:47,p:0.40,k:'a'},
+ {pa:47,f:['feed'],no:41,p:0.35,k:'a'},
+ {pa:35,f:['grass'],no:48,p:0.30,k:'a'},
+ {pa:38,f:['grass'],no:56,p:0.30,k:'a'},
+ {pa:40,f:['feed'],no:38,p:0.35,k:'a'},
+ {pa:40,f:['junk'],no:76,p:0.25,k:'a'},
+ {pa:56,f:['grass'],no:57,p:0.35,k:'a'},
+ {pa:57,f:['feed'],no:60,p:0.25,k:'a'},
+ {pa:23,f:['meat'],no:89,p:0.01,k:'a'},
+ {pa:76,f:['junk'],no:78,p:0.08,k:'a'},
+ {pa:3,f:['bug','bug'],no:34,p:0.80,k:'b'},
+ {pa:3,f:['grass','grass'],no:4,p:0.80,k:'b'},
+ {pa:2,f:['grass','grass'],no:19,p:0.75,k:'b'},
+ {pa:2,f:['feed','feed'],no:17,p:0.75,k:'b'},
+ {pa:6,f:['grass','grass'],no:5,p:0.80,k:'b'},
+ {pa:1,f:['grass','bug'],no:21,p:0.70,k:'b'},
+ {pa:7,f:['grass','bug'],no:15,p:0.70,k:'b'},
+ {pa:15,f:['bug','bug'],no:22,p:0.65,k:'b'},
+ {pa:22,f:['bug','bug'],no:23,p:0.70,k:'b'},
+ {pa:20,f:['bug','meat'],no:49,p:0.30,k:'b'},
+ {pa:17,f:['grass','feed'],no:18,p:0.70,k:'b'},
+ {pa:18,f:['grass','feed'],no:19,p:0.65,k:'b'},
+ {pa:19,f:['grass','feed'],no:38,p:0.55,k:'b'},
+ {pa:4,f:['feed','feed'],no:34,p:0.65,k:'b'},
+ {pa:10,f:['junk','junk'],no:2,p:0.65,k:'b'},
+ {pa:31,f:['feed','meat'],no:32,p:0.65,k:'b'},
+ {pa:49,f:['meat','meat'],no:31,p:0.60,k:'b'},
+ {pa:49,f:['junk','junk'],no:48,p:0.65,k:'b'},
+ {pa:34,f:['fish','fish'],no:35,p:0.65,k:'b'},
+ {pa:34,f:['feed','fish'],no:47,p:0.60,k:'b'},
+ {pa:41,f:['feed','fish'],no:47,p:0.60,k:'b'},
+ {pa:38,f:['grass','grass'],no:56,p:0.55,k:'b'},
+ {pa:40,f:['feed','junk'],no:76,p:0.45,k:'b'},
+ {pa:56,f:['grass','grass'],no:57,p:0.70,k:'b'},
+ {pa:57,f:['feed','feed'],no:60,p:0.50,k:'b'},
+ {pa:23,f:['meat','meat'],no:89,p:0.03,k:'b'},
+ {pa:90,f:['meat','meat'],no:89,p:0.35,k:'b'},
+ {pa:90,f:['meat'],no:89,p:0.18,k:'a'},
+ {pa:76,f:['junk','junk'],no:78,p:0.25,k:'b'},
+ {pa:19,f:['p38','grass'],no:56,p:0.90,k:'x'},
+ {pa:56,f:['p56','grass'],no:60,p:0.90,k:'x'},
+ {pa:34,f:['p3','bug'],no:47,p:1.00,k:'x'},
+ {pa:31,f:['p32','feed'],no:49,p:1.00,k:'x'},
+ {pa:40,f:['p76','junk'],no:78,p:0.80,k:'x'},
+ {pa:22,f:['p22','bug'],no:23,p:1.00,k:'x'},
+ {pa:2,f:['p31','meat'],no:32,p:1.00,k:'x'},
+ {pa:56,f:['p56','p1'],no:204,p:1.00,k:'X'},
+ {pa:57,f:['p57','p21'],no:205,p:0.90,k:'X'},
+ {pa:75,f:['p75','p31'],no:206,p:0.90,k:'X'},
+ {pa:57,f:['p57','p40'],no:62,p:0.90,k:'X'},
+ {pa:35,f:['p35','p48'],no:207,p:0.80,k:'X'},
+ {pa:3,f:['p3','p78'],no:95,p:0.70,k:'X'},
+ {pa:41,f:['p41','p47'],no:86,p:0.80,k:'X'},
+ {pa:89,f:['p89','p23'],no:94,p:0.70,k:'X'},
+ {pa:57,f:['p57','p86'],no:93,p:0.70,k:'X'}];
+const CAP=[1.00,1.00,0.90,0.80,0.70,0];
+const CRAFT_ONLY=[62,86,93,94,95,204,205,206,207];
+const HABITAT={75:'sand',90:'snow'};   // 서식지 전용 — 그 배경에서만 야생 방문
+
+// 부모 + 먹이 조합 검색 — 먹이는 순서 무관
+function matchRecipe(parentNo,pick){
+  if(!parentNo||!pick||!pick.length)return null;
+  const key=[...pick].sort().join('|');
+  return RECIPE.find(r=>r.pa===parentNo&&r.f.length===pick.length&&[...r.f].sort().join('|')===key)||null;
+}
+// 조합 전용 종은 야생·확률표에서 제외
+const isCraftOnly=no=>CRAFT_ONLY.includes(no);
+const habitatOf=no=>HABITAT[no]||null;
+// 천장 보정 — 확정 조합(똥을 태우는 조합)에만 적용한다.
+// 흔한 먹이로 찔러보는 조합까지 보정하면 전설이 로또가 아니라 시간문제가 된다.
+const PITY_STEP=0.05;
+const isCertain=r=>r.k==='x'||r.k==='X';
+function pityKey(r){return r.pa+'>'+[...r.f].sort().join('+');}
+function effProb(r){
+  if(!isCertain(r)) return r.p;
+  const n=(S.pity&&S.pity[pityKey(r)])||0;
+  return Math.min(1, r.p + PITY_STEP*n);
+}
+function bumpPity(r,hit){
+  if(!isCertain(r)) return;
+  if(!S.pity)S.pity={};
+  const k=pityKey(r);
+  if(hit) delete S.pity[k]; else S.pity[k]=(S.pity[k]||0)+1;
+}
+// 조합 실패 시 — 결과보다 한 등급 아래를 확정으로 준다 (재료가 헛되지 않게)
+function consolation(no){
+  const g=spOf(no)[4];
+  const pool=BY_GRADE[Math.max(0,g-1)].filter(x=>!isCraftOnly(x[0])&&!habitatOf(x[0])&&x[4]<5);
+  return (pool.length?pool:BY_GRADE[0])[Math.floor(Math.random()*(pool.length||BY_GRADE[0].length))][0];
+}
+const SECRET_GRADE=5; // 신화급 — 조합법 비공개 (추후 12종 추가 예정)
+
+/* ════════ 다국어 ════════ */
+const T={
+ko:{
+ nCount:n=>`${n}개`,
+ decoBg:'배경',decoObj:'내 오브제',inShop:'상점',buyInShop:'상점에서 먼저 구매하세요',
+ goShopDeco:'상점 가기',noObjYet:'아직 오브제가 없어요. 상점에서 사보세요.',
+ placedN:(a,b)=>`${a} / ${b} 놓음`,placedOf:(a,b)=>`${a} / ${b} 놓음`,
+ objNoSpare:'남은 개수가 없어요',tutDone:c=>`튜토리얼 달성! 🪙 +${c}`,bought:(n,c)=>`${n} 구매! (×${c})`,boughtBg:n=>`${n} 배경을 샀어요`,gotObj:n=>`🎁 ${n}을(를) 얻었어요!`,
+ questOnly:'퀘스트 보상',objSize:p=>`크기 ${p}%`,objG:['일반','고급','희귀','유니크'],
+ moveeObj:'🪑 소품 옮기기',moveePoop:'💩 똥 옮기기',
+ moveHintObj:'소품을 끌어서 옮겨보세요',moveHintPoop:'똥을 끌어서 옮겨보세요',
+ rFeedThis:'이 똥에게 먹이를 줘 보세요',rNotYet:'아직 못 만난 똥',
+ rk1:'① 부모 + 먹이 1개',rk2:'② 부모 + 먹이 2개',rkX:'③ 확정 A — 똥 1 + 먹이 1',rkXX:'④ 확정 B — 똥 + 똥 (조합 전용)',
+ habOnly:th=>`${th} 배경에서 야생 방문으로만 나옵니다`,craftOnly:'조합으로만 얻을 수 있습니다',
+ wildOnly:'야생 방문이나 등급 확률로 나옵니다',placeTitle:'똥칸에 앉히기',penUnit:'번',penEmptyShort:'비어 있음',
+
+ // ── v4 ──
+ penEmpty:'빈 똥칸',penEmptyHint:'야생 똥이 지나가다 자리를 잡습니다',
+ wildIn:x=>`야생 똥 도착까지 ${x}`,wildCame:'야생 똥이 자리를 잡았어요!',
+ wildCall:n=>`📺 광고 보고 바로 부르기 (${n}회 남음)`,wildFull:'빈 똥칸이 없어요',wildAdOut:'오늘은 다 썼어요',
+ feedMe:'먹이를 기다립니다',digesting:'소화 중',poopReady:'똥을 눌 수 있어요!',
+ goFeed:'먹이 주러 가기',needParent:'이 칸에 똥이 없어요',busyDigest:'지금 소화 중이에요',
+ penLocked:'아직 잠긴 칸이에요',slotLocked:n=>`먹이 2칸은 도감 ${n}종부터`,
+ placed:(n,i)=>`${n}을(를) ${i}번 칸에 앉혔어요`,unplaced:'도감으로 돌려보냈어요',
+ placeIn:i=>`${i}번 칸에 배치`,unplace:'도감으로 보내기',
+ rcpFail:'조합 실패 — 대신 한 등급 아래가 나왔어요',pityOn:n=>`연속 실패 보정 +${n}%`,
+ tabHome:'홈',tabDex:'도감',tabShop:'상점',tabQuest:'퀘스트',tabHelp:'도움',
+ segFeed:'먹이주기',segDeco:'방꾸미기',segPen:'똥칸선택',
+ feedTitle:'먹이주기',feedSub:'똥칸에 사는 똥에게 먹이를 주세요. 키운 똥도 먹이가 됩니다.',
+ decoTitle:'방꾸미기',decoSub:'배경을 고르고 오브제를 놓아보세요.',
+ penTitle:'똥칸 선택',penSub:'키울 칸을 고르세요. 둘째·셋째 칸은 도감을 모으면 열립니다.',
+ dexTitle:'똥도감',dexSub:'모은 똥을 눌러 조합법을 보고 팔거나 먹이로 바꾸세요.',
+ shopTitle:'상점',shopSub:'먹이·재화·꾸미기를 구매하세요.',
+ questTitle:'퀘스트',questSub:'튜토리얼을 끝내고 매일 퀘스트를 받으세요.',
+ helpTitle:'도움말',helpSub:'',
+ adBanner:'',privacy:'개인정보처리방침',adslot:'광고 자리 (AdSense 승인 후 표시)',
+ navGuide:'조합법 공략',navDex:'전체 도감',navLog:'개발 노트',
+ go:'먹이 주기',busy:'소화 중이에요',sell:'거름 팔기',sellAll:n=>`전부 팔기 (${n}개)`,
+ sold:(n,p)=>`${n} 거름 판매 🪙 +${p}`,
+ soldAll:(c,p)=>`${c}개 팔아서 🪙 +${p}`,
+ sellDup:'중복 팔기',sellDupNone:'팔 중복 똥이 없어요',
+ goPick:'먹이를 고르세요',goNoFood:'먹이가 부족해요',brokePoop:n=>`${n}을(를) 먹이로 바꿨어요`,
+ hatch:'소화 끝!',tapHatch:'눌러서 받기',digDone:'이제 똥을 눌 수 있어요',doPoop:'똥 누기',
+ speed:c=>`🪙 ${c} 소화 촉진`,speedAd:'🎬 광고로 촉진',speedDone:'바로 나왔어요!',
+ objEdit:'위치 옮기기',objDone:'옮기기 끝내기',objReset:'위치 초기화',
+ objDrag:'화면의 소품을 끌어서 옮겨보세요',
+ place:'놓기',remove:'치우기',
+ lockQ:n=>`도감 ${n}종 모으면 열려요`,lockP:p=>`${p} 구매로 열려요`,
+ ORD:['첫째','둘째','셋째','넷째','다섯째','여섯째'],
+ penNo:i=>`${T.ko.ORD[i-1]||i+'번'} 칸`,unlocked:'열림',buy:'구매',own:'보유 중',use:'사용 중',equip:'적용',
+ iapSoon:'결제는 아직 준비 중이에요.\n출시 때 열립니다.',buySoon:'준비 중',
+ kofiT:'개발자에게 커피 사주기',kofiD:'혼자 만드는 게임이에요. 한 잔이면 힘이 납니다',kofiB:'후원',
+ haveN:n=>`x${n}`,
+ dexHave:(a,b)=>`${a} / ${b} 종`,
+ recipe:'조합법',chance:'확률',recipeHide:'유니크 조합법은 비밀입니다',
+ segDexList:'도감',segRecipe:'조합법',
+ recipeHelp:'특별 조합은 한 번 성공해야 공개됩니다. 아직 못 찾은 건 물음표로 표시돼요.',
+ poopFeedTip:'똥을 먹이로 쓰려면 도감에서 그 똥을 눌러 [먹이로 바꾸기]를 먼저 하세요.',
+ recipeP:p=>`성공 확률 ${p}%`,recipeLock:'아직 발견하지 못한 조합',
+ toFeed:'먹이로 바꾸기',noStock:'도감에 없어요',
+ shopFood:'먹이',shopGem:'재화',shopDeco:'꾸미기',
+ adCoin:'광고 보고 코인 받기',adCoinD:'🪙 +150 · 5분마다',
+ adFeed:'광고 보고 먹이 받기',adFeedD:'🍖x3 🐟x3 · 10분마다',
+ watch:'보기',cool:s=>`${s} 후`,
+ adDone:'보상을 받았어요!',adSoon:'광고는 아직 준비 중이에요.\n지금은 보상만 드립니다.',
+ gemPack:(g,p)=>`💎 ${g}개 · ${p}`,
+ qTut:'튜토리얼',qDaily:'일일 퀘스트',qLv:'레벨 보상',qAch:'지속 퀘스트',
+ achLv:l=>`Lv.${l}부터 열려요`,
+ uniqPick:'유니크 똥 선택',uniqRw:'🏆 유니크 1종',
+ uniqTitle:'유니크 똥을 하나 고르세요',
+ uniqDesc:'퀘스트로만 얻을 수 있는 특별한 똥입니다.\n30 · 60 · 90 레벨에서 한 마리씩, 총 3마리를 모을 수 있어요.',
+ ach:{hatch:'똥 수집 마스터',dex:'도감 수집가',coin:'누적 코인 부자',feed:'먹이 미식가',sell:'거름 상인',rare:'희귀 사냥꾼',epic:'영웅 사냥꾼',legend:'전설 사냥꾼',
+      pen:'똥칸 확장가',deco:'꾸미기 애호가',streak:'연속 출석'},
+ qReset:h=>`${h}시간 후 초기화`,claim:'받기',claimed:'받음',
+ lvUp:l=>`🎉 레벨 ${l} 달성!`,lvMax:`🏆 최고 레벨 ${MAX_LV} 달성!`,
+ tut:['똥에게 먹이 주기','첫 똥 받기','똥을 거름으로 팔기','도감 3종 모으기','똥을 먹이로 바꾸기','둘째 칸 열기'],
+ daily:['똥 5개 받기','거름 300어치 팔기','먹이 5개 사용하기'],
+ newFound:'🎉 새로운 똥 발견!',ok:'좋아!',close:'닫기',
+ noCoin:'코인이 부족해요',noGem:'젬이 부족해요',
+ offline:n=>`자리를 비운 사이 ${n}개가 나왔어요`,
+ grades:['일반','고급','희귀','영웅','전설','신화'],
+ foods:{grass:'풀',bug:'벌레',meat:'고기',fish:'생선',feed:'사료',junk:'정크푸드'},
+ themes:{grass:'풀밭',sand:'모래사장',snow:'눈밭',night:'밤하늘'},
+ objs:{fly:'똥파리',flower:'꽃밭',mushroom:'버섯',paper:'두루마리 휴지',
+   fence:'울타리',bucket:'양동이',sign:'푯말',toilet:'변기',
+   tree:'나무',pig:'돼지 저금통',lamp:'등불',trophy:'황금 트로피',crown:'왕관'},
+ inf:'∞',free:'무료',reset:'처음부터 다시',resetAsk:'모든 기록이 사라집니다. 계속할까요?',
+ help:`<b>기본 흐름</b>
+<ol><li><b>먹이주기</b>에서 먹이를 1~2개 골라 빈 똥칸에 놓습니다</li>
+<li>무언가 찾아와 먹고 <b>소화</b>합니다 (등급이 높을수록 오래 걸립니다)</li>
+<li>소화가 끝나면 <b>💩 똥 누기</b> 버튼이 뜹니다. 누르면 똥이 나와 <b>도감</b>에 들어갑니다</li>
+<li>똥칸은 바로 비워지니 다시 먹이를 놓으면 됩니다</li></ol>
+<b>도감에 모은 똥으로 할 수 있는 것</b>
+<ol><li><b>거름으로 팔기</b> — 코인을 법니다. 등급이 높을수록 비쌉니다</li>
+<li><b>먹이로 바꾸기</b> — 그 똥이 먹이가 됩니다. 좋은 똥을 넣을수록 더 좋은 똥이 나옵니다</li></ol>
+<b>똥칸</b>
+<ol><li>1칸으로 시작 · 2·3칸은 도감 5종·12종에서 자동 해금</li>
+<li>4~6칸은 결제로 해금 (출시 때 활성화)</li></ol>
+<b>알아두면 좋은 것</b>
+<ol><li>풀·벌레는 15분마다 1개씩 저절로 자랍니다 (최대 15개)</li>
+<li>처음 발견한 종은 경험치를 <b>2배</b>로 줍니다</li>
+<li>특별 조합은 <b>도감 → 조합법</b>에서 확인할 수 있습니다</li>
+<li>게임을 꺼도 소화 시간은 흐릅니다</li></ol>`},
+en:{
+ nCount:n=>`${n}`,
+ decoBg:'Background',decoObj:'My objects',inShop:'Shop',buyInShop:'Buy it in the shop first',
+ goShopDeco:'Go to shop',noObjYet:'No objects yet. Try the shop.',
+ placedN:(a,b)=>`${a} / ${b} placed`,placedOf:(a,b)=>`${a} / ${b} placed`,
+ objNoSpare:'None left to place',tutDone:c=>`Tutorial step done! 🪙 +${c}`,bought:(n,c)=>`Bought ${n}! (x${c})`,boughtBg:n=>`Unlocked the ${n} backdrop`,gotObj:n=>`🎁 You got ${n}!`,
+ questOnly:'Quest reward',objSize:p=>`size ${p}%`,objG:['Common','Fine','Rare','Unique'],
+ moveeObj:'🪑 Move props',moveePoop:'💩 Move poop',
+ moveHintObj:'Drag the props to move them',moveHintPoop:'Drag the poop to move it',
+ rFeedThis:'Try feeding this one',rNotYet:'Not discovered yet',
+ rk1:'1. Parent + 1 feed',rk2:'2. Parent + 2 feeds',rkX:'3. Certain A — 1 poop + 1 feed',rkXX:'4. Certain B — poop + poop (craft only)',
+ habOnly:th=>`Only from wild visits in the ${th} habitat`,craftOnly:'Obtainable only by crafting',
+ wildOnly:'Comes from wild visits or the grade table',placeTitle:'Place in a pen',penUnit:'',penEmptyShort:'empty',
+
+ // ── v4 ──
+ penEmpty:'Empty pen',penEmptyHint:'A wild poop will wander in and settle',
+ wildIn:x=>`Wild poop arrives in ${x}`,wildCame:'A wild poop settled in!',
+ wildCall:n=>`📺 Watch an ad to call one (${n} left)`,wildFull:'No empty pen',wildAdOut:'All used up today',
+ feedMe:'Waiting to be fed',digesting:'Digesting',poopReady:'Ready to poop!',
+ goFeed:'Go feed',needParent:'No poop in this pen',busyDigest:'Still digesting',
+ penLocked:'This pen is locked',slotLocked:n=>`Second feed slot unlocks at ${n} species`,
+ placed:(n,i)=>`${n} moved into pen ${i}`,unplaced:'Sent back to the Dex',
+ placeIn:i=>`Place in pen ${i}`,unplace:'Send to Dex',
+ rcpFail:'Recipe missed — you got one grade below instead',pityOn:n=>`Miss bonus +${n}%`,
+ tabHome:'Home',tabDex:'Dex',tabShop:'Shop',tabQuest:'Quests',tabHelp:'Help',
+ segFeed:'Feed',segDeco:'Decorate',segPen:'Pens',
+ feedTitle:'Feeding',feedSub:'Feed the poop in the pen. Your own poops work as feed too.',
+ decoTitle:'Decorate',decoSub:'Pick a backdrop and place your objects.',
+ penTitle:'Choose a pen',penSub:'Pick where to raise. Pens 2 and 3 unlock as your Dex fills.',
+ dexTitle:'Poopdex',dexSub:'Tap a poop to see recipes, sell it, or turn it into feed.',
+ shopTitle:'Shop',shopSub:'Buy feed, currency and decorations.',
+ questTitle:'Quests',questSub:'Finish the tutorial, then take on daily quests.',
+ helpTitle:'Help',helpSub:'',
+ adBanner:'',privacy:'Privacy Policy',adslot:'Ad slot (shown after AdSense approval)',
+ navGuide:'Recipe guide',navDex:'Poopdex',navLog:'Devlog',
+ go:'Put out feed',busy:'Digesting...',sell:'Sell fertilizer',sellAll:n=>`Sell all (${n})`,
+ sold:(n,p)=>`Sold ${n} 🪙 +${p}`,
+ soldAll:(c,p)=>`Sold ${c} for 🪙 +${p}`,
+ sellDup:'Sell dupes',sellDupNone:'No duplicates to sell',
+ goPick:'Pick a feed',goNoFood:'Not enough feed',brokePoop:n=>`Turned ${n} into feed`,
+ hatch:'Ready!',tapHatch:'Tap to collect',digDone:'Ready to poop',doPoop:'Poop now',
+ speed:c=>`🪙 ${c} Speed up`,speedAd:'🎬 Speed up with an ad',speedDone:'Out instantly!',
+ objEdit:'Move objects',objDone:'Done moving',objReset:'Reset positions',
+ objDrag:'Drag the props on the screen to move them',
+ place:'Place',remove:'Remove',
+ lockQ:n=>`Unlocks at ${n} species`,lockP:p=>`Unlock for ${p}`,
+ ORD:['1st','2nd','3rd','4th','5th','6th'],
+ penNo:i=>`${T.en.ORD[i-1]||i} pen`,unlocked:'Unlocked',buy:'Buy',own:'Owned',use:'In use',equip:'Apply',
+ iapSoon:'Payments are not live yet.\nThey open at launch.',buySoon:'Soon',
+ kofiT:'Buy the dev a coffee',kofiD:'A one-person game. One cup goes a long way',kofiB:'Support',
+ haveN:n=>`x${n}`,
+ dexHave:(a,b)=>`${a} / ${b} species`,
+ recipe:'Recipe',chance:'Odds',recipeHide:'Unique recipes are a secret',
+ segDexList:'Dex',segRecipe:'Recipes',
+ recipeHelp:'Special recipes unlock once you pull them off. Undiscovered ones stay hidden.',
+ poopFeedTip:'To feed a poop, open it in the Dex and tap [Make feed] first.',
+ recipeP:p=>`${p}% chance`,recipeLock:'Not discovered yet',
+ toFeed:'Make feed',noStock:'None in your Dex',
+ shopFood:'Feed',shopGem:'Currency',shopDeco:'Decor',
+ adCoin:'Watch an ad for coins',adCoinD:'🪙 +150 · every 5 min',
+ adFeed:'Watch an ad for feed',adFeedD:'🍖x3 🐟x3 · every 10 min',
+ watch:'Watch',cool:s=>`in ${s}`,
+ adDone:'Reward claimed!',adSoon:'Ads are not live yet.\nHave the reward anyway.',
+ gemPack:(g,p)=>`💎 ${g} · ${p}`,
+ qTut:'Tutorial',qDaily:'Daily quests',qLv:'Level rewards',qAch:'Ongoing quests',
+ achLv:l=>`Unlocks at Lv.${l}`,
+ uniqPick:'Pick a unique',uniqRw:'🏆 1 unique poop',
+ uniqTitle:'Choose a unique poop',
+ uniqDesc:'A special poop you can only get from quests.\nOne at level 30, 60 and 90 - three in total.',
+ ach:{hatch:'Drop Master',dex:'Dex Collector',coin:'Coin Tycoon',feed:'Feed Gourmet',sell:'Fertilizer Trader',rare:'Rare Hunter',epic:'Epic Hunter',legend:'Legend Hunter',
+      pen:'Pen Expander',deco:'Decorator',streak:'Daily Streak'},
+ qReset:h=>`resets in ${h}h`,claim:'Claim',claimed:'Claimed',
+ lvUp:l=>`🎉 Level ${l} reached!`,lvMax:`🏆 Max level ${MAX_LV} reached!`,
+ tut:['Feed your poop','Get your first poop','Sell a poop','Find 3 species','Turn a poop into feed','Unlock the 2nd pen'],
+ daily:['Get 5 poops','Sell 300 worth','Use 5 feeds'],
+ newFound:'🎉 New poop found!',ok:'Nice!',close:'Close',
+ noCoin:'Not enough coins',noGem:'Not enough gems',
+ offline:n=>`${n} poop(s) came out while you were away`,
+ grades:['Common','Uncommon','Rare','Epic','Legendary','Mythic'],
+ // 사료를 'Feed'라 부르면 탭 이름 Feed(먹이주기)와 똑같아 헷갈린다
+ foods:{grass:'Grass',bug:'Bug',meat:'Meat',fish:'Fish',feed:'Pellets',junk:'Junk Food'},
+ themes:{grass:'Meadow',sand:'Beach',snow:'Snow',night:'Night'},
+ objs:{fly:'Poop Fly',flower:'Flower Bed',mushroom:'Mushroom',paper:'Toilet Paper',
+   fence:'Fence',bucket:'Bucket',sign:'Signpost',toilet:'Toilet',
+   tree:'Tree',pig:'Piggy Bank',lamp:'Lantern',trophy:'Golden Trophy',crown:'Crown'},
+ inf:'∞',free:'free',reset:'Start over',resetAsk:'All progress will be lost. Continue?',
+ help:`<b>Core loop</b>
+<ol><li>Pick one or two feeds and put them in an empty pen</li>
+<li>Something shows up, eats, and <b>digests</b></li>
+<li>When it is done, hit <b>💩 Poop now</b> and the poop goes into your <b>Dex</b></li>
+<li>The pen frees up right away, so feed it again</li></ol>
+<b>What to do with your Dex</b>
+<ol><li><b>Sell as fertilizer</b> — earns coins, more for higher grades</li>
+<li><b>Turn into feed</b> — better poops in, better poops out</li></ol>
+<b>Pens</b>
+<ol><li>Start with 1 · pens 2 and 3 unlock at 5 and 12 species</li>
+<li>Pens 4-6 unlock with a purchase (live at launch)</li></ol>
+<b>Good to know</b>
+<ol><li>Grass and bugs regrow 1 every 15 min (max 15)</li>
+<li>First discovery gives <b>double</b> XP</li>
+<li>Special recipes are listed under <b>Dex → Recipes</b></li>
+<li>Digestion continues while the game is closed</li></ol>`}};
+let LANG=Store.get('poopy_lang')||'ko';
+
+/* ── 효과음 — 샘플 파일 없이 WebAudio로 즉석 합성한다.
+   단일 HTML 게임이라 에셋을 늘리지 않는 게 맞고, 라이선스 문제도 없다.
+   브라우저 정책상 첫 터치 전에는 소리를 못 내므로 pointerdown에서 게으르게 연다. ── */
+const SND={on:Store.get('poopy_snd')!=='off',ctx:null};
+document.addEventListener('pointerdown',()=>{ if(!SND.on)return;
+  try{ if(!SND.ctx)SND.ctx=new (window.AudioContext||window.webkitAudioContext)();
+       if(SND.ctx&&SND.ctx.state==='suspended')SND.ctx.resume(); }catch(e){} },{capture:true});
+function tone(f,dur,type,vol,when,slide){ if(!SND.on||!SND.ctx)return;
+  const c=SND.ctx,t=c.currentTime+(when||0),o=c.createOscillator(),g=c.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f,t);
+  if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+dur);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol||.1,t+.008);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+.03); }
+const SFX={
+ feed:()=>tone(300,.10,'sine',.12,0,170),                                   // 냠
+ poop:()=>{tone(200,.12,'sine',.13,0,90);tone(523,.06,'triangle',.07,.10);},// 뿅
+ nu:  ()=>[523,659,784,1047].forEach((f,i)=>tone(f,.11,'triangle',.09,i*.09)),      // 새 종!
+ lgnd:()=>[392,523,659,784,1047,1319].forEach((f,i)=>tone(f,.14,'triangle',.10,i*.08)), // 전설
+ coin:()=>{tone(988,.05,'square',.06);tone(1319,.09,'square',.05,.05);},
+ buy: ()=>{tone(392,.06,'triangle',.08);tone(587,.08,'triangle',.07,.06);},
+ ready:()=>{tone(880,.07,'sine',.08);tone(1320,.10,'sine',.07,.08);},
+ tap: ()=>tone(660,.05,'square',.04)};
+function sfx(n){ try{(SFX[n]||(()=>{}))();}catch(e){} }
+function sndToggle(){ SND.on=!SND.on; Store.set('poopy_snd',SND.on?'on':'off'); sndLabel(); if(SND.on)sfx('ready'); }
+function sndLabel(){ const b=document.getElementById('snd'); if(b){b.textContent=SND.on?'\uD83D\uDD0A':'\uD83D\uDD07'; b.classList.toggle('on',SND.on);} }
+const t=k=>T[LANG][k];
+
+/* ════════ 상태 ════════ */
+const newState=()=>({
+  coins:60,gems:0,lv:1,exp:0,
+  open:[true,false,false,false,false,false],
+  pens:new Array(MAX_PENS).fill(null),
+  sel:0, inv:{}, found:{}, food:{grass:10,bug:10,meat:2,fish:2,feed:0,junk:0}, regen:Date.now(),
+  wildNext:0, wildAd:{d:'',n:0}, pity:{}, rOpen:{},
+  theme:'grass', themes:['grass'],
+  objs:{},        // {오브제id: 보유 개수}
+  slots:[],       // 방에 놓인 것 [{id, x, y}] — 같은 오브제를 여러 개 놓을 수 있다
+  editObj:false, moveMode:'obj',   // 'obj' | 'poop' — 옮기기 대상
+  pick:[], tut:0, daily:{date:'',p:[0,0,0],c:[0,0,0]}, adcd:{coin:0,feed:0,speed:0}, lvClaim:1,
+  stat:{hatch:0,coin:0,feed:0,gRare:0,gEpic:0,gLegend:0,streak:1,last:''}, ach:{}, uniq:[], rcp:{}
+});
+let S=newState(), TAB='home', SEG='feed', SHOPSEG='food', DEXSEG='list';
+function load(){
+  try{const r=Store.get(KEY);if(r)Object.assign(S,JSON.parse(r));}catch(e){}
+  const d=newState();
+  for(const k in d) if(S[k]===undefined) S[k]=d[k];
+  while(S.open.length<MAX_PENS)S.open.push(false);
+  while(S.pens.length<MAX_PENS)S.pens.push(null);
+  S.open[0]=true;S.open.length=MAX_PENS;S.pens.length=MAX_PENS;
+  // 구버전(objs 배열 + objOn + objPos) → 신버전(수량 맵 + 슬롯) 이관
+  if(Array.isArray(S.objs)){
+    const owned=S.objs, on=Array.isArray(S.objOn)?S.objOn:[], op=S.objPos||{};
+    S.objs={}; owned.forEach(id=>{S.objs[id]=(S.objs[id]||0)+1;});
+    S.slots=on.map((id,k)=>{
+      const p=op[id]||OBJ_POS[k%OBJ_POS.length];
+      return {id,x:p[0],y:p[1]};
+    });
+    delete S.objOn; delete S.objPos;
+  }
+  if(!S.objs||Array.isArray(S.objs)) S.objs={};
+  if(!Array.isArray(S.slots)) S.slots=[];
+  if(!S.poopPos) S.poopPos={};
+
+  // ── 값 정규화 ──
+  // 저장 데이터가 조금만 어긋나도 화면이 통째로 죽는 일이 있었다. (S.sel이 범위 밖이면 흰 화면)
+  const numOr=(v,d,min,max)=>{ const n=Number(v);
+    if(!isFinite(n)) return d;
+    return Math.max(min, Math.min(max, Math.floor(n))); };
+  S.coins = numOr(S.coins, 0, 0, 1e15);
+  S.gems  = numOr(S.gems,  0, 0, 1e9);
+  S.lv    = numOr(S.lv,    1, 1, MAX_LV);
+  S.exp   = numOr(S.exp,   0, 0, 1e12);
+  S.sel   = numOr(S.sel,   0, 0, MAX_PENS-1);
+  if(!S.open[S.sel]) S.sel = Math.max(0, S.open.findIndex(Boolean));
+  S.tut   = numOr(S.tut,   0, 0, 99);
+  S.lvClaim = numOr(S.lvClaim, 1, 1, MAX_LV);
+  // 없는 오브제·종을 가리키는 찌꺼기 제거
+  Object.keys(S.objs).forEach(k=>{ const n=numOr(S.objs[k],0,0,999);
+    if(!objDef(k)||n<=0) delete S.objs[k]; else S.objs[k]=n; });
+  S.slots = S.slots.filter(sl=>sl&&objDef(sl.id))
+    .map(sl=>({id:sl.id, x:numOr(sl.x,50,0,100), y:numOr(sl.y,80,0,100)}));
+  S.pens = S.pens.map(c=>{
+    if(!c||!spOf(c.no)) return null;
+    if(c.feed&&(!spOf(c.feed.out)||!Array.isArray(c.feed.pick))) c.feed=null;
+    return c; });
+  if(!Array.isArray(S.themes)||!S.themes.length) S.themes=['grass'];
+  if(!THEMES.some(t2=>t2.id===S.theme)) S.theme='grass';
+  Object.keys(S.inv||{}).forEach(k=>{ if(!spOf(+k)||!(S.inv[k]>0)) delete S.inv[k]; });
+  Object.keys(S.found||{}).forEach(k=>{ if(!spOf(+k)) delete S.found[k]; });
+  rollDaily(); checkStreak(); regenFood(); wildTick(true);
+}
+const save=()=>Store.set(KEY,JSON.stringify(S));
+const dexCount=()=>Object.keys(S.found).length;
+const spOf=no=>SPECIES.find(s=>s[0]===no);
+const invCount=no=>S.inv[no]||0;
+const needXp=l=>Math.round(40*Math.pow(l,1.22));
+const today=()=>new Date().toISOString().slice(0,10);
+function rollDaily(){ if(S.daily.date!==today()){S.daily={date:today(),p:[0,0,0],c:[0,0,0]};} }
+function regenFood(){
+  if(!S.regen)S.regen=Date.now();
+  const el=Date.now()-S.regen; const gain=Math.floor(el/REGEN_MS);
+  if(gain>0){
+    BASIC.forEach(id=>{ S.food[id]=Math.min(REGEN_CAP,(S.food[id]||0)+gain); });
+    S.regen += gain*REGEN_MS;
+  }
+}
+function regenLeft(){ if(!S.regen)return REGEN_MS; return REGEN_MS-((Date.now()-S.regen)%REGEN_MS); }
+
+/* ════════ 헬퍼 ════════ */
+const $=id=>document.getElementById(id);
+const IMGFB='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="18" fill="%23E6D9C6"/><text x="50" y="62" font-size="38" text-anchor="middle" fill="%23B8A896">?</text></svg>');
+const thumb=s=>'assets/thumb/poop_'+String(s[0]).padStart(3,'0')+'_'+s[1]+'.webp';
+const img=s=>'assets/poop_'+String(s[0]).padStart(3,'0')+'_'+s[1]+'.webp';
+
+const nameOf=s=>LANG==='ko'?s[2]:s[3];
+const descOf=s=>LANG==='ko'?s[5]:s[6];
+function fmt(ms){const s=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;
+  return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`;}
+function num(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e4?(n/1e3).toFixed(1)+'k':Math.floor(n).toLocaleString();}
+function toast(m){const el=$('toast');el.textContent=m;el.classList.add('on');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),2100);}
+function probs(ts){const b=ts-2;
+  const w=[100-b*11,22+b*5,6+b*4,1.2+b*1.8,0.25+b*0.75].map(x=>Math.max(x,0));
+  const tot=w.reduce((a,c)=>a+c,0);return w.map(x=>x/tot);}
+function rollGrade(ts){const p=probs(ts);let r=Math.random();
+  for(let i=0;i<5;i++){r-=p[i];if(r<=0)return i;}return 0;}
+const pickSpecies=g=>BY_GRADE[g][Math.floor(Math.random()*BY_GRADE[g].length)];
+// 똥 먹이: id가 'p{도감번호}' 형태. 등급이 높을수록 tier가 높다.
+function isPoopFood(id){return typeof id==='string'&&id[0]==='p'&&/^\d+$/.test(id.slice(1));}
+function poopFoodNo(id){return parseInt(id.slice(1),10);}
+function foodDef(id){
+  if(isPoopFood(id)){const sp=spOf(poopFoodNo(id));
+    return {id,poop:true,sp,tier:sp[4]+2,cost:0,inf:false};}
+  return FOODS.find(x=>x.id===id);
+}
+function allFoods(){
+  const list=FOODS.slice();
+  Object.keys(S.food||{}).forEach(k=>{ if(isPoopFood(k)&&S.food[k]>0) list.push(foodDef(k)); });
+  return list;
+}
+function foodQty(id){const f=foodDef(id);return f&&f.inf?Infinity:(S.food[id]||0);}
+function foodName(f){return f.poop?nameOf(f.sp):t('foods')[f.id];}
+
+/* ════════ 진행/보상 ════════ */
+function addXp(n){
+  if(S.lv>=MAX_LV){S.exp=needXp(MAX_LV);return;}
+  S.exp+=n; let up=0;
+  while(S.lv<MAX_LV&&S.exp>=needXp(S.lv)){S.exp-=needXp(S.lv);S.lv++;up++;}
+  if(S.lv>=MAX_LV){S.lv=MAX_LV;S.exp=needXp(MAX_LV);}
+  if(up){toast(S.lv>=MAX_LV?t('lvMax'):t('lvUp')(S.lv)); adBreak('levelup');} }
+function bump(i,n){ rollDaily(); S.daily.p[i]=(S.daily.p[i]||0)+n; }
+// 튜토리얼 한 칸 전진 — 화면에 '🪙 60'이라 써 붙여 놓고 안 주면 사기다. 여기서 준다.
+const TUT_REWARD=60;
+// 결제 연동 전까지는 '구매'가 아니라 '준비 중'으로 보여야 한다.
+// 초록 활성 버튼을 눌러야만 준비 중인 걸 아는 건 낚시다. 붙이는 날 true로 바꾸면 끝.
+const IAP_READY=false;
+// 후원 — Ko-fi 아이디만 넣으면 버튼이 켜진다. 비워두면 아예 안 보인다.
+// (toss.me·카카오페이 개인 송금 링크는 서비스가 끝나 국내 간편결제 경로가 없다)
+const KOFI_ID='poopygame';
+const KOFI_URL=()=>KOFI_ID?('https://ko-fi.com/'+KOFI_ID):'';
+function iapButton(cls){const b=document.createElement('button');b.className=cls;
+  b.textContent=IAP_READY?t('buy'):t('buySoon'); b.disabled=!IAP_READY;
+  b.onclick=()=>toast(t('iapSoon')); return b;}
+function tutStep(k){ if(S.tut!==k) return;
+  S.tut++; S.coins+=TUT_REWARD; bumpStat('coin',TUT_REWARD); bump(1,TUT_REWARD);
+  sfx('ready'); save(); renderTabs(); renderHud(); toast(t('tutDone')(TUT_REWARD)); }
+function checkQuests(){ let did=false;
+  PENS.forEach((p,i)=>{if(p.t==='quest'&&!S.open[i]&&dexCount()>=p.need){S.open[i]=true;did=true;
+    toast(t('penNo')(i+1)+' '+t('unlocked')); tutStep(5);}});
+  // 3단계(도감 3종)는 부르는 데가 없어서 튜토리얼이 여기서 영영 멈춰 있었다.
+  // 3에서 막히면 tutStep(4)·(5)도 죽으므로 4·5·6이 통째로 잠겼다.
+  if(S.tut===3 && dexCount()>=3){ tutStep(3); did=true; }
+  if(did)save(); return did; }
+const TUT_IC=['🍽️','🥚','🪙','📖','📦','🏠'];
+const DAILY_IC=['🐣','💰','🍖'];
+// 지속 퀘스트(업적) — lv: 해금 레벨, st: 추적 스탯, steps: 단계 목표, rw: 단계별 보상
+const ACH=[
+ {id:'hatch',  ic:'🐣',lv:1, st:'hatch',  steps:[10,50,200,1000],   rw:[{c:300},{c:1200},{g:3},{g:10}]},
+ {id:'dex',    ic:'📚',lv:1, st:'dex',    steps:[5,12,20,28,35],    rw:[{c:400},{c:1500},{g:2},{g:5},{g:15,o:'trophy'}]},
+ {id:'coin',   ic:'🏦',lv:1, st:'coin',   steps:[1000,10000,100000,1000000], rw:[{c:200},{c:1000},{g:3},{g:12}]},
+ {id:'feed',   ic:'🥄',lv:1, st:'feed',   steps:[50,200,1000],      rw:[{c:300},{c:1200},{g:5}]},
+ {id:'sell',   ic:'💰',lv:3, st:'coin',   steps:[2000,20000,200000],rw:[{c:500},{c:2000},{g:6}]},
+ {id:'rare',   ic:'💎',lv:5, st:'gRare',  steps:[1,4],              rw:[{c:800},{g:3}]},
+ {id:'epic',   ic:'🔮',lv:8, st:'gEpic',  steps:[1,3],              rw:[{c:2000},{g:6}]},
+ {id:'legend', ic:'🐉',lv:12,st:'gLegend',steps:[1,4],              rw:[{g:8},{g:25}]},
+ {id:'pen',    ic:'🏡',lv:1, st:'pens',   steps:[2,3,4],            rw:[{c:600},{c:2500},{g:10,o:'crown'}]},
+ {id:'deco',   ic:'🖼️',lv:6, st:'deco',   steps:[2,4,8],            rw:[{c:500},{c:2000},{g:5}]},
+ {id:'streak', ic:'🔥',lv:4, st:'streak', steps:[3,7,30],           rw:[{c:700},{g:3},{g:20}]},
+];
+const DAILY_GOAL=[5,300,5];
+const DAILY_REWARD=[{c:200},{c:0,g:2},{c:150}];
+function lvReward(l){
+  const r={c:l*120};
+  if(l%5===0)r.g=3;
+  if(l%10===0){r.c=l*300;r.g=8;}
+  if(l%50===0){r.c=l*600;r.g=40;}
+  if(l%30===0)r.uniq=true;
+  return r;
+}
+const UNIQ=[201,202,203];
+function ownUniq(){return (S.uniq||[]);}
+function statVal(k){
+  if(k==='dex')return dexCount();
+  if(k==='pens')return S.open.filter(Boolean).length;
+  if(k==='deco')return S.themes.length+Object.values(S.objs||{}).reduce((a,b)=>a+b,0);
+  return (S.stat&&S.stat[k])||0;
+}
+function achTier(a){ const v=statVal(a.st); let i=0; while(i<a.steps.length&&v>=a.steps[i])i++; return i; }
+function achClaimed(a){ return (S.ach&&S.ach[a.id])||0; }
+function achReady(a){ return S.lv>=a.lv && achTier(a)>achClaimed(a); }
+function bumpStat(k,n){ if(!S.stat)S.stat={}; S.stat[k]=(S.stat[k]||0)+n; }
+function checkStreak(){
+  if(!S.stat)S.stat={};
+  const d=today(); if(S.stat.last===d)return;
+  const y=new Date(Date.now()-86400e3).toISOString().slice(0,10);
+  S.stat.streak = (S.stat.last===y)?(S.stat.streak||1)+1:1;
+  S.stat.last=d;
+}
+function dailyDone(i){return S.daily.p[i]>=DAILY_GOAL[i];}
+function questAlert(){
+  rollDaily();
+  if(S.tut<6) return true;
+  for(let i=0;i<3;i++) if(dailyDone(i)&&!S.daily.c[i]) return true;
+  if(S.lv>S.lvClaim) return true;
+  if(ACH.some(a=>achReady(a))) return true;
+  return false;
+}
+
+/* ════════ 광고 (AdSense H5 Games Ads 연동 지점) ════════ */
+/* 실제 연동 시:
+   - 앵커 배너: #adbanner 안에 <ins class="adsbygoogle"> 삽입
+   - 보상형/전면: adConfig / adBreak API 사용 (H5 Games Ads)
+   지금은 스텁이라 광고 없이 보상만 지급합니다. */
+function adBreak(type){ if(typeof window.adBreak==='function'){ /* window.adBreak({type}) */ } }
+function watchAd(kind){
+  const now=Date.now(), cd=kind==='coin'?300e3:600e3;
+  if(now-(S.adcd[kind]||0)<cd) return;
+  S.adcd[kind]=now;
+  if(kind==='coin'){S.coins+=150;}
+  else{S.food.meat=(S.food.meat||0)+3;S.food.fish=(S.food.fish||0)+3;}
+  save(); toast(t('adSoon')); setTimeout(()=>toast(t('adDone')),1400); renderAll();
+}
+
+/* ════════ 오브제 · 방 꾸미기 ════════ */
+const objOwned=id=>S.objs[id]||0;
+const objPlaced=id=>S.slots.filter(s=>s.id===id).length;
+const objSpare=id=>objOwned(id)-objPlaced(id);      // 아직 안 놓은 개수
+function objBuy(o){
+  if(o.cur==='quest') return toast(t('questOnly'));
+  if(o.cur==='gem'){ if(S.gems<o.cost) return toast(t('noGem')); S.gems-=o.cost; }
+  else { if(S.coins<o.cost) return toast(t('noCoin')); S.coins-=o.cost; }
+  S.objs[o.id]=objOwned(o.id)+1;
+  sfx('buy'); save(); renderAll(); toast(t('bought')(t('objs')[o.id],objOwned(o.id)));
+}
+function objPlace(id){
+  if(objSpare(id)<=0) return toast(t('objNoSpare'));
+  const k=S.slots.length;
+  const p=OBJ_POS[k%OBJ_POS.length];
+  // 이미 그 자리에 뭔가 있으면 조금 흩어놓는다
+  const jit=()=>Math.round((Math.random()*10-5)*10)/10;
+  S.slots.push({id,x:Math.max(6,Math.min(94,p[0]+(k>=OBJ_POS.length?jit():0))),
+                   y:Math.max(45,Math.min(98,p[1]+(k>=OBJ_POS.length?jit():0)))});
+  save(); renderAll();
+}
+function objTakeBack(id){
+  const i=S.slots.map(s=>s.id).lastIndexOf(id);
+  if(i<0) return;
+  S.slots.splice(i,1); save(); renderAll();
+}
+// 퀘스트·업적 보상으로 오브제를 준다
+function grantObj(id){
+  S.objs[id]=objOwned(id)+1;
+  save(); toast(t('gotObj')(t('objs')[id]));
+}
+
+/* ════════ 먹이 슬롯 · 야생 방문 ════════ */
+const SLOT_UNLOCK=8;                       // 도감 8종이면 먹이 2칸
+const slots=()=>dexCount()>=SLOT_UNLOCK?2:1;
+const WILD_MS=6*3600*1000;                 // 이후 6시간마다 한 마리
+const WILD_AD_MAX=2;                       // 광고 즉시 호출 하루 2회
+const emptyPen=()=>S.pens.findIndex((x,i)=>S.open[i]&&!x);
+
+// 서식지별 방문 가중치 — [일반,고급,희귀,영웅,전설]
+const HAB_W={grass:[70,25,4.5,0.5,0], sand:[46,34,17,2.6,0.4],
+             snow:[30,32,26,10,2], night:[18,26,28,18,10]};
+function wildPool(g){
+  const th=S.theme;
+  return BY_GRADE[g].filter(sp=>{
+    const no=sp[0];
+    if(sp[4]===5) return false;            // 유니크는 퀘스트로만
+    if(isCraftOnly(no)) return false;      // 조합 전용은 야생에 안 나옴
+    const h=habitatOf(no);
+    return !h || h===th;                   // 서식지 전용은 그 배경에서만
+  });
+}
+function rollWild(){
+  const w=HAB_W[S.theme]||HAB_W.grass;
+  const tot=w.reduce((a,b)=>a+b,0); let r=Math.random()*tot, g=0;
+  for(let i=0;i<w.length;i++){ if(r<w[i]){g=i;break;} r-=w[i]; }
+  let pool=wildPool(g);
+  while(!pool.length&&g>0){ g--; pool=wildPool(g); }
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+// 서식지 히든은 그 배경에서만 별도 확률로 한 번 더 굴린다
+function wildVisit(firstEver){
+  const free=emptyPen(); if(free<0) return false;
+  let sp=null;
+  if(firstEver){
+    // 맨 처음 한 마리는 반드시 일반 등급. 희귀가 걸리면 첫 똥까지 30분을 기다리게 된다.
+    const pool=wildPool(0);
+    sp=pool[Math.floor(Math.random()*pool.length)];
+  }
+  if(!sp){
+    const hid=Object.keys(HABITAT).map(Number).filter(no=>HABITAT[no]===S.theme&&!S.found[no]);
+    if(hid.length&&Math.random()<0.18) sp=spOf(hid[Math.floor(Math.random()*hid.length)]);
+  }
+  if(!sp) sp=rollWild();
+  if(!sp) return false;
+  S.pens[free]={no:sp[0],feed:null,wild:true};
+  if(!S.found[sp[0]]){S.found[sp[0]]=true;checkQuests();}
+  return free;
+}
+function wildTick(silent){
+  const now=Date.now();
+  if(!S.wildNext){                                  // 첫 시작 — 즉시 한 마리
+    const at=wildVisit(true); S.wildNext=now+WILD_MS;
+    if(at!==false&&!silent) toast(t('wildCame'));
+    return;
+  }
+  if(emptyPen()<0){ S.wildNext=Math.max(S.wildNext,now+WILD_MS); return; }
+  let came=0;
+  while(now>=S.wildNext && emptyPen()>=0 && came<MAX_PENS){
+    if(wildVisit()===false) break;
+    S.wildNext+=WILD_MS; came++;
+  }
+  if(came&&!silent) toast(t('wildCame'));
+}
+function wildLeft(){ return Math.max(0,(S.wildNext||0)-Date.now()); }
+function wildAdLeft(){
+  if(!S.wildAd||S.wildAd.d!==today()) S.wildAd={d:today(),n:0};
+  return WILD_AD_MAX-S.wildAd.n;
+}
+function wildByAd(){
+  if(emptyPen()<0) return toast(t('wildFull'));
+  if(wildAdLeft()<=0) return toast(t('wildAdOut'));
+  adBreak('reward'); S.wildAd.n++;
+  const at=wildVisit();
+  if(at!==false){ S.sel=at; save(); renderAll(); toast(t('wildCame')); }
+}
+
+/* ════════ 무대 ════════ */
+function renderStage(){
+  const st=$('stage'); st.className=''; st.classList.add('t_'+S.theme);
+  const i=S.sel, body=$('stagebody'); body.innerHTML='';
+  {const cc=S.pens[i];
+   $('pill').innerHTML = cc
+     ? `${t('penNo')(i+1)}<span class="pn">·</span><span class="ps">${nameOf(spOf(cc.no))}</span>`
+     : `${t('penNo')(i+1)}`;}
+  if(!S.open[i]){
+    const meta=PENS[i];
+    const lab = meta.t==='quest' ? t('lockQ')(meta.need) : t('lockP')(meta.p[LANG]);
+    body.innerHTML=`<div class="lockbig"><div class="lk">🔒</div><div class="lt">${lab}</div></div>`;
+    if(meta.t==='iap'){const b=iapButton('btn g sm');
+      b.style.cssText='position:absolute;left:50%;top:64%;transform:translateX(-50%)';
+      body.appendChild(b);}
+    return;
+  }
+  if(S.editObj){const eb=document.createElement('div');eb.className='editbar';
+    eb.innerHTML=`<span class="eb-ic">✋</span>${S.moveMode==='poop'?t('moveHintPoop'):t('moveHintObj')}`;
+    body.appendChild(eb);}
+  S.slots.forEach((sl,k)=>{const o=objDef(sl.id);if(!o)return;
+    const e=document.createElement('div');
+    e.className='objdeco'+(S.editObj&&S.moveMode==='obj'?' editing':'');
+    // 아래에 있을수록 가까우니 앞에 온다. z를 안 주면 배치 순서대로 겹쳐 원근이 깨진다.
+    e.style.cssText=`left:${sl.x}%;top:${sl.y}%;--osz:${Math.round(56*o.sz)}px;z-index:${Math.round(sl.y)}`;
+    e.innerHTML=`<img src="assets/obj/${o.id}.webp" alt="" onerror="this.replaceWith(document.createTextNode('${o.ic}'))">`;
+    if(S.editObj&&S.moveMode==='obj') makeDraggable(e,k);
+    body.appendChild(e);});
+  const c=S.pens[i];
+  if(!c){
+    const h=document.createElement('div'); h.className='emptyhint';
+    const lf=wildLeft();
+    h.innerHTML=`🌿<br>${t('penEmpty')}<br><span style="font-size:12px;opacity:.85">`
+      +`${t('wildIn')(fmt(lf))}</span>`;
+    body.appendChild(h);
+    const bar=document.createElement('div'); bar.className='speedbar';
+    const b=document.createElement('button'); b.className='btn g sm';
+    const left=wildAdLeft();
+    b.textContent=left>0?t('wildCall')(left):t('wildAdOut');
+    b.disabled=left<=0;
+    b.onclick=e=>{e.stopPropagation();wildByAd();};
+    bar.appendChild(b); body.appendChild(bar);
+    return;
+  }
+  // ── 부모 똥은 항상 보인다. 소화 중에도 결과는 감춘다 ──
+  const sp=spOf(c.no), fd=c.feed, now=Date.now();
+  const done=!!fd && now>=fd.end;
+  const pct=fd?Math.max(0,Math.min(100,((now-fd.start)/(fd.end-fd.start))*100)):0;
+  const pv=document.createElement('div'); pv.className='penview';
+  const fedIcons=fd?fd.pick.map(id=>{const f=foodDef(id);return f?(f.poop?'💩':f.ic):'';}).join(''):'';
+  pv.innerHTML=`<div class="sh" style="top:calc(min(120px,28vh) - 12px)"></div>
+    <img id="mainpoop" class="breathe" src="${img(sp)}" alt="">
+    <div class="pentime" data-end="${fd?fd.end:0}">${
+      done ? t('poopReady')
+           : fd ? t('digesting')+' '+fedIcons+' '+fmt(fd.end-now)
+                : t('feedMe')}</div>
+    ${fd?`<div class="penbar"><i style="width:${pct}%"></i></div>`:''}`;
+  body.appendChild(pv);
+  // 위치는 항상 좌표로 정한다 (기본값 포함) — 문구가 캐릭터를 따라다니게 하려면 한 덩어리여야 한다
+  const pp=(S.poopPos&&S.poopPos[i]);
+  const movable=S.editObj&&S.moveMode==='poop';
+  const px=pp?pp[0]:POOP_HOME[0], py=pp?pp[1]:POOP_HOME[1];
+  pv.style.left=px+'%'; pv.style.top=py+'%'; pv.style.zIndex=Math.round(py)+1;
+  if(movable){ pv.classList.add('editing'); makeDraggable(pv,'poop'); }
+  else { pv.querySelector('#mainpoop').onclick=()=>{ squash(); if(done) setTimeout(()=>doPoop(i),160); }; }
+  const bar=document.createElement('div'); bar.className='speedbar';
+  if(done){
+    const b=document.createElement('button'); b.className='btn poopbtn';
+    b.textContent='💩 '+t('doPoop');
+    b.onclick=e=>{e.stopPropagation();squash();setTimeout(()=>doPoop(i),160);};
+    bar.appendChild(b);
+  } else if(fd){
+    const b1=document.createElement('button'); b1.className='btn sm'; b1.textContent=t('speed')(speedCost(c));
+    b1.onclick=e=>{e.stopPropagation();speedUp(i,false);};
+    const b2=document.createElement('button'); b2.className='btn g sm';
+    const left=180e3-(Date.now()-(S.adcd.speed||0));
+    if(left>0){b2.textContent=t('cool')(fmt(left));b2.disabled=true;}
+    else{b2.textContent=t('speedAd');b2.onclick=e=>{e.stopPropagation();speedUp(i,true);};}
+    bar.appendChild(b1);bar.appendChild(b2);
+  }
+  // 먹이를 기다리는 상태에서는 버튼을 두지 않는다.
+  // 무대 하단 버튼바가 이름표('먹이를 기다립니다')를 덮어버렸다. 아래 먹이 격자로 바로 주면 된다.
+  if(bar.childElementCount) body.appendChild(bar);
+}
+
+// idx가 숫자면 오브제 슬롯, 'poop'이면 똥 위치를 옮긴다
+function makeDraggable(el,idx){
+  let dragging=false;
+  const move=ev=>{
+    if(!dragging)return; ev.preventDefault();
+    const r=$('stage').getBoundingClientRect();
+    let x=(ev.clientX-r.left)/r.width*100, y=(ev.clientY-r.top)/r.height*100;
+    // 무대 위쪽 절반은 하늘·울타리다. 땅 위(세로 52% 아래)로만 놓게 막는다.
+    // 안 막으면 똥이 구름 위에 떠 있게 된다.
+    // 어디든 놓을 수 있게 둔다 — 연못 위에 앉히든 하늘에 띄우든 그건 취향이다.
+    // 화면 밖으로 나가 사라지는 것만 막는다.
+    x=Math.max(8,Math.min(92,x)); y=Math.max(18,Math.min(99,y));
+    el.style.left=x+'%'; el.style.top=y+'%';
+    const rx=Math.round(x*10)/10, ry=Math.round(y*10)/10;
+    if(idx==='poop'){ if(!S.poopPos)S.poopPos={}; S.poopPos[S.sel]=[rx,ry]; }
+    else if(S.slots[idx]){ S.slots[idx].x=rx; S.slots[idx].y=ry; }
+  };
+  const up=()=>{ if(!dragging)return; dragging=false; save();
+    document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); };
+  el.addEventListener('pointerdown',ev=>{ dragging=true; ev.preventDefault();
+    document.addEventListener('pointermove',move); document.addEventListener('pointerup',up); });
+}
+function tickClock(){
+  const n=new Date(),p=x=>String(x).padStart(2,'0');
+  const el=$('clock'); if(!el)return;
+  el.textContent = LANG==='ko'
+    ? `${n.getFullYear()}. ${n.getMonth()+1}. ${n.getDate()}.  ${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`
+    : `${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}  ${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
+}
+function squash(){const im=$('mainpoop');if(!im)return;im.classList.remove('squash');void im.offsetWidth;im.classList.add('squash');}
+function speedCost(c){
+  // 남은 시간 1분당 (등급+1)×2 코인. 예전엔 10초당이라 초반에 400코인이 넘어 아무도 못 썼다.
+  const sp=spOf(c.no); const left=c.feed?Math.max(0,c.feed.end-Date.now())/1000:0;
+  return Math.max(5,Math.ceil(left/60)*(sp[4]+1)*2);
+}
+function speedUp(i,byAd){
+  const c=S.pens[i]; if(!c||!c.feed)return;
+  if(!byAd){ const cost=speedCost(c); if(S.coins<cost)return toast(t('noCoin')); S.coins-=cost; }
+  else { const now=Date.now(); if(now-(S.adcd.speed||0)<180e3) return; S.adcd.speed=now; adBreak('reward'); }
+  c.feed.end=Date.now(); save(); renderAll(); toast(t('speedDone'));
+}
+
+/* ════════ 액션 ════════ */
+// 소화 시간 — 부모 등급이 기준이라 결과가 노출되지 않는다. 먹이가 무거우면 조금 더 걸린다
+function digestMs(parentGrade, tierSum){
+  // 무거운 밥은 오래 걸린다. 흔한 똥이라도 고기를 두 덩이 먹으면 반나절을 소화한다.
+  // 부모 등급과 밥의 무게 중 큰 쪽이 시간을 정하므로, 결과 등급은 여전히 드러나지 않는다.
+  const g=Math.max(0,Math.min(5,Math.max(parentGrade, tierSum-2)));
+  return Math.round(GT[g]*1000*(1+0.10*tierSum));
+}
+// 먹이 주기 — 반드시 부모 똥이 앉아 있는 칸에만
+function feedPen(){
+  const i=S.sel, c=S.pens[i];
+  if(!S.open[i]) return toast(t('penLocked'));
+  if(!c) return toast(t('needParent'));
+  if(c.feed) return toast(t('busyDigest'));
+  if(S.pick.length<1) return;
+  if(S.pick.length>slots()) return toast(t('slotLocked')(SLOT_UNLOCK));
+  for(const id of S.pick){ if(foodQty(id)<=0) return toast(t('goNoFood')); }
+
+  let ts=0;
+  S.pick.forEach(id=>{const f=foodDef(id);ts+=f.tier;
+    if(!f.inf){S.food[id]=(S.food[id]||0)-1; if(S.food[id]<=0)delete S.food[id];}
+    bump(2,1); bumpStat('feed',1);});
+
+  // 조합 판정 — 부모 + 먹이 조합이 맞으면 그 결과, 아니면 등급표
+  const rc=matchRecipe(c.no,S.pick);
+  let outNo, viaRecipe=false;
+  if(rc){
+    const p=effProb(rc), hit=Math.random()<p;
+    bumpPity(rc,hit);
+    if(hit){ outNo=rc.no; viaRecipe=true; if(!S.rcp)S.rcp={}; S.rcp[RECIPE.indexOf(rc)]=1; }
+    else if(isCertain(rc)){ outNo=consolation(rc.no); }   // 똥을 태운 확정 조합은 한 등급 아래 보장
+    else {                                                // 흔한 먹이로 찔러본 조합은 그냥 운
+      const g=rollGrade(ts);
+      const pool=BY_GRADE[g].filter(x=>!isCraftOnly(x[0])&&!habitatOf(x[0])&&x[4]<5);
+      const use=pool.length?pool:BY_GRADE[0];
+      outNo=use[Math.floor(Math.random()*use.length)][0];
+    }
+  } else {
+    const g=rollGrade(ts);
+    const pool=BY_GRADE[g].filter(x=>!isCraftOnly(x[0])&&!habitatOf(x[0])&&x[4]<5);
+    const use=pool.length?pool:BY_GRADE[0];
+    outNo=use[Math.floor(Math.random()*use.length)][0];
+  }
+  const now=Date.now();
+  c.feed={pick:[...S.pick], out:outNo, via:viaRecipe, start:now, end:now+digestMs(spOf(c.no)[4],ts)};
+  sfx('feed'); S.pick=[]; tutStep(0); save(); renderAll();
+  const im=$('mainpoop'); if(im) im.classList.add('pop');
+}
+const drop=feedPen;   // 구 이름 호환
+
+// 똥 누기 — 부모는 그대로 남는다
+function doPoop(i){
+  const c=S.pens[i]; if(!c||!c.feed||Date.now()<c.feed.end) return;
+  const sp=spOf(c.feed.out), isNew=!S.found[sp[0]];
+  S.found[sp[0]]=true; S.inv[sp[0]]=(S.inv[sp[0]]||0)+1;
+  addXp(GXP[sp[4]]*(isNew?2:1)); bump(0,1); bumpStat('hatch',1);
+  if(sp[4]===2)bumpStat('gRare',1); if(sp[4]===3)bumpStat('gEpic',1); if(sp[4]===4)bumpStat('gLegend',1);
+  c.feed=null;                       // 부모는 계속 이 칸에 산다
+  sfx(isNew?(sp[4]>=4?'lgnd':'nu'):'poop');
+  tutStep(1); checkQuests(); save(); renderAll(); showCard(sp,isNew);
+}
+const hatch=doPoop;   // 구 이름 호환
+
+// 도감에서 부모로 앉히기
+function placeInPen(no,i){
+  if(!S.open[i]) return toast(t('penLocked'));
+  if(invCount(no)<1) return toast(t('noStock'));
+  const cur=S.pens[i];
+  if(cur&&cur.feed) return toast(t('busyDigest'));
+  if(cur){ S.inv[cur.no]=(S.inv[cur.no]||0)+1; }   // 있던 부모는 도감으로 돌아간다
+  S.inv[no]-=1; if(S.inv[no]<=0) delete S.inv[no];
+  S.pens[i]={no:no,feed:null};
+  S.sel=i; TAB='home'; save(); closeModal(); renderAll();
+  toast(t('placed')(nameOf(spOf(no)),i+1));
+}
+// 부모를 도감으로 돌려보내기
+function unplacePen(i){
+  const c=S.pens[i]; if(!c) return;
+  if(c.feed) return toast(t('busyDigest'));
+  S.inv[c.no]=(S.inv[c.no]||0)+1; S.pens[i]=null;
+  save(); renderAll(); toast(t('unplaced'));
+}
+
+function sellPoop(no,qty){
+  const have=invCount(no); if(have<1) return toast(t('noStock'));
+  const n=Math.max(1,Math.min(qty||1,have));
+  const sp=spOf(no), total=SELL[sp[4]]*n;
+  S.inv[no]-=n; if(S.inv[no]<=0) delete S.inv[no];
+  S.coins+=total; bumpStat('coin',total); bump(1,total); tutStep(2);
+  sfx('coin'); save(); closeModal(); renderAll();
+  toast(n>1?t('soldAll')(n,num(total)):t('sold')(nameOf(sp),num(total)));
+}
+// 조합 재료로 쓰이는 똥은 넉넉히 남긴다 — 중복 판매가 재료를 팔아버리면 안 된다
+function keepCount(no){
+  let need=1;
+  RECIPE.forEach(r=>{
+    if(S.found[r.no]&&r.k!=='X') return;          // 이미 얻은 결과는 재료를 아낄 필요 없음
+    const uses=r.f.filter(f=>isPoopFood(f)&&poopFoodNo(f)===no).length;
+    if(uses) need=Math.max(need, uses + (r.pa===no?1:0));
+  });
+  return Math.min(need,3);
+}
+function sellDuplicates(){
+  let cnt=0,total=0;
+  Object.keys(S.inv).forEach(k=>{
+    const keep=keepCount(+k), n=S.inv[k]-keep;
+    if(n>0){ const sp=spOf(+k); total+=SELL[sp[4]]*n; cnt+=n; S.inv[k]=keep; }
+  });
+  if(!cnt) return toast(t('sellDupNone'));
+  S.coins+=total; bumpStat('coin',total); bump(1,total); tutStep(2);
+  sfx('coin'); save(); renderAll(); toast(t('soldAll')(cnt,num(total)));
+}
+function _sellPoopOld(no){
+  if(invCount(no)<1) return toast(t('noStock'));
+  const sp=spOf(no), price=SELL[sp[4]];
+  S.inv[no]--; if(S.inv[no]<=0) delete S.inv[no];
+  S.coins+=price; bumpStat('coin',price); bump(1,price); tutStep(2);
+  save(); closeModal(); renderAll(); toast(t('sold')(nameOf(sp),price));
+}
+function breakDown(no){
+  if(invCount(no)<1)return toast(t('noStock'));
+  const sp=spOf(no), fid='p'+no;
+  S.inv[no]--; if(S.inv[no]<=0) delete S.inv[no];
+  S.food[fid]=(S.food[fid]||0)+1; sfx('tap'); tutStep(4);
+  save(); closeModal(); renderAll();
+  toast(t('brokePoop')(nameOf(sp)));
+}
+
+/* ════════ 패널 ════════ */
+function renderSeg(){
+  const seg=$('seg');
+  if(TAB!=='home'&&TAB!=='shop'&&TAB!=='dex'){seg.style.display='none';return;}
+  seg.style.display='flex';seg.innerHTML='';
+  const items = TAB==='home'
+    ? [['feed',t('segFeed')],['deco',t('segDeco')],['pen',t('segPen')]]
+    : TAB==='dex' ? [['list',t('segDexList')],['recipe',t('segRecipe')]]
+    : [['food',t('shopFood')],['gem',t('shopGem')],['deco',t('shopDeco')]];
+  const cur = TAB==='home'?SEG:(TAB==='dex'?DEXSEG:SHOPSEG);
+  items.forEach(([id,label])=>{
+    const b=document.createElement('button');b.textContent=label;
+    if(id===cur)b.classList.add('on');
+    b.onclick=()=>{if(TAB==='home')SEG=id;else if(TAB==='dex')DEXSEG=id;else SHOPSEG=id;renderAll();};
+    seg.appendChild(b);
+  });
+}
+function renderPanel(){
+  const body=$('pbody');body.innerHTML='';
+  const showAct = TAB==='home'&&SEG==='feed';
+  $('actbar').style.display=showAct?'':'none';
+  let titleKey = TAB==='home' ? SEG+'Title' : TAB+'Title';
+  let subKey   = TAB==='home' ? SEG+'Sub'   : TAB+'Sub';
+  $('ptxt').textContent=t(titleKey)||'';
+  $('helpbtn').classList.toggle('on',TAB==='quest');
+  $('psub').textContent=t(subKey)||'';
+
+  if(TAB==='home'&&SEG==='feed'){
+    const g=document.createElement('div');g.className='grid4';
+    allFoods().forEach(f=>{
+      const q=foodQty(f.id), has=q>0;
+      const d=document.createElement('div');
+      const picked=S.pick.filter(x=>x===f.id).length;
+      d.className='tile'+(has?'':' dis')+(picked?' sel':'')+(f.poop?' pf':'');
+      d.innerHTML=`<span class="cnt">${f.inf?t('inf'):q}</span>
+        <div class="ti">${f.poop?`<img class="pfimg" src="${thumb(f.sp)}" alt="">`:f.ic}</div>
+        <div class="tn">${foodName(f)}${picked>1?` ×${picked}`:''}</div>`;
+      d.onclick=()=>{ if(!has)return toast(t('goNoFood'));
+        const used=S.pick.filter(x=>x===f.id).length;
+        if(!f.inf&&used>=q)return toast(t('goNoFood'));
+        const cap=slots();
+        if(cap<2&&S.pick.length>=1){ S.pick=[f.id]; toast(t('slotLocked')(SLOT_UNLOCK)); }
+        else { if(S.pick.length>=cap)S.pick.shift(); S.pick.push(f.id); }
+        renderPanel();renderPick();};
+      g.appendChild(d);
+    });
+    body.appendChild(g);
+    const rg=document.createElement('div');rg.className='regen';
+    rg.innerHTML=`🌱 <b>${fmt(regenLeft())}</b>`;
+    body.appendChild(rg);
+    // 똥 먹이를 한 번도 안 만들어 본 사람에게만 길을 알려준다
+    if(!allFoods().some(f=>f.poop) && dexCount()>=2){
+      const tip=document.createElement('div');tip.className='regen';
+      tip.style.cssText='background:#FFF3D8;border-color:#E9CF9E';
+      tip.innerHTML='💩 '+t('poopFeedTip'); body.appendChild(tip);
+    }
+  }
+  else if(TAB==='home'&&SEG==='deco'){
+    // ── 옮기기 ──
+    const bar=document.createElement('div');bar.style.cssText='display:flex;gap:6px;margin-bottom:8px';
+    const eb=document.createElement('button');
+    eb.className='btn sm'+(S.editObj?'':' ghost'); eb.style.flex='1';
+    eb.textContent=S.editObj?t('objDone'):t('objEdit');
+    eb.onclick=()=>{S.editObj=!S.editObj;save();renderAll();};
+    bar.appendChild(eb);
+    if(S.editObj){
+      const mb=document.createElement('button');mb.className='btn b sm';mb.style.flex='1';
+      mb.textContent=S.moveMode==='poop'?t('moveePoop'):t('moveeObj');
+      mb.onclick=()=>{S.moveMode=S.moveMode==='poop'?'obj':'poop';save();renderAll();};
+      bar.appendChild(mb);
+    }
+    const rb=document.createElement('button');rb.className='btn ghost sm';rb.style.flex='0 0 auto';
+    rb.textContent=t('objReset');
+    rb.onclick=()=>{ S.poopPos={};   // 똥도 기본 자리로
+      S.slots.forEach((sl,k)=>{const p=OBJ_POS[k%OBJ_POS.length];sl.x=p[0];sl.y=p[1];});
+      save();renderAll();};
+    bar.appendChild(rb);
+    body.appendChild(bar);
+
+    // ── 배경 ──
+    const h1=document.createElement('div');h1.className='rhead';
+    h1.textContent=t('decoBg')+' · '+S.themes.length+'/'+THEMES.length;
+    body.appendChild(h1);
+    const g=document.createElement('div');g.className='grid4';
+    THEMES.forEach(th=>{
+      const own=S.themes.includes(th.id), on=S.theme===th.id;
+      const d=document.createElement('div');d.className='tile'+(on?' sel':'')+(own?'':' dis');
+      d.innerHTML=`<div class="ti">${th.ic}</div><div class="tn">${t('themes')[th.id]}</div>
+        <div class="tc">${on?t('use'):(own?t('equip'):'🔒 '+t('inShop'))}</div>`;
+      d.onclick=()=>{ if(!own) return toast(t('buyInShop'));
+        S.theme=th.id;save();renderAll();};
+      g.appendChild(d);
+    });
+    body.appendChild(g);
+
+    // ── 보유 오브제 ──
+    const total=Object.values(S.objs).reduce((a,b)=>a+b,0);
+    const h2=document.createElement('div');h2.className='rhead';
+    h2.textContent=t('decoObj')+' · '+t('placedN')(S.slots.length,total);
+    body.appendChild(h2);
+    const mine=OBJECTS.filter(o=>objOwned(o.id)>0);
+    if(!mine.length){
+      const p=document.createElement('div');p.className='helpbox';
+      p.textContent=t('noObjYet'); body.appendChild(p);
+    }
+    mine.forEach(o=>{
+      const own=objOwned(o.id), put=objPlaced(o.id);
+      const r=document.createElement('div');r.className='row'+(put?' done':'');
+      r.innerHTML=`<div class="ri"><img src="assets/obj/${o.id}.webp" style="width:30px;height:30px;object-fit:contain"
+          onerror="this.replaceWith(document.createTextNode('${o.ic}'))"></div>
+        <div class="rt"><div class="rn">${t('objs')[o.id]}
+          <span class="rcnt">×${own}</span>
+          <span class="ogr g${o.g}">${t('objG')[o.g]}</span></div>
+        <div class="rd">${t('placedOf')(put,own)}</div></div>`;
+      const wrap=document.createElement('div');wrap.style.cssText='display:flex;gap:4px';
+      const pb=document.createElement('button');pb.className='btn sm';
+      pb.textContent=t('place'); pb.disabled=objSpare(o.id)<=0;
+      pb.onclick=()=>objPlace(o.id);
+      const tb=document.createElement('button');tb.className='btn ghost sm';
+      tb.textContent=t('remove'); tb.disabled=put<=0;
+      tb.onclick=()=>objTakeBack(o.id);
+      wrap.appendChild(pb);wrap.appendChild(tb);
+      r.appendChild(wrap);body.appendChild(r);
+    });
+    const go=document.createElement('button');go.className='btn b';
+    go.style.cssText='width:100%;margin-top:9px';
+    go.textContent='🛒 '+t('goShopDeco');
+    go.onclick=()=>{TAB='shop';SHOPSEG='deco';renderAll();};
+    body.appendChild(go);
+  }
+  else if(TAB==='home'&&SEG==='pen'){
+    for(let i=0;i<MAX_PENS;i++){
+      const meta=PENS[i],opened=S.open[i],c=S.pens[i];
+      const r=document.createElement('div');r.className='row'+(S.sel===i?' done':'');
+      let d='';
+      if(!opened) d = meta.t==='quest'
+        ? `${t('lockQ')(meta.need)}<div class="mini"><i style="width:${Math.min(100,dexCount()/meta.need*100)}%"></i></div>`
+        : t('lockP')(meta.p[LANG]);
+      else if(!c) d=`${t('penEmpty')} · ${t('wildIn')(fmt(wildLeft()))}`;
+      else if(!c.feed) d=`${nameOf(spOf(c.no))} · ${t('feedMe')}`;
+      else d = Date.now()>=c.feed.end
+        ? `${nameOf(spOf(c.no))} · ${t('poopReady')}`
+        : `${nameOf(spOf(c.no))} · ${t('digesting')} ${fmt(c.feed.end-Date.now())}`;
+      const ic = !opened?'🔒' : !c?'🌿' : !c.feed?'🍽️' : (Date.now()>=c.feed.end?'💩':'⏳');
+      r.innerHTML=`<div class="ri">${ic}</div>
+        <div class="rt"><div class="rn">${t('penNo')(i+1)}</div><div class="rd">${d}</div></div>`;
+      if(opened){ r.onclick=()=>{S.sel=i;renderAll();}; }
+      else if(meta.t==='iap'){ r.appendChild(iapButton('btn g sm')); }
+      body.appendChild(r);
+    }
+  }
+  else if(TAB==='dex'&&DEXSEG==='recipe'){
+    const info=document.createElement('div');info.className='regen';
+    info.innerHTML='🧪 '+t('recipeHelp');body.appendChild(info);
+    const tip=document.createElement('div');tip.className='regen';
+    tip.style.cssText='background:#FFF3D8;border-color:#E9CF9E';
+    tip.innerHTML='💩 '+t('poopFeedTip'); body.appendChild(tip);
+
+    // 79개를 한 번에 그리면 저사양 기기에서 멈춘다. 부모별로 묶어 접어 둔다.
+    const byParent={};
+    RECIPE.forEach((r,i)=>{ (byParent[r.pa]=byParent[r.pa]||[]).push({r,i}); });
+    const KIND={a:t('rk1'),b:t('rk2'),x:t('rkX'),X:t('rkXX')};
+    const order=Object.keys(byParent).map(Number).sort((x,y)=>{
+      const fx=!!S.found[x], fy=!!S.found[y];
+      if(fx!==fy) return fx?-1:1;                 // 내가 아는 부모가 위로
+      return spOf(x)[4]-spOf(y)[4] || x-y;
+    });
+    if(!S.rOpen) S.rOpen={};
+    order.forEach(pa=>{
+      const list=byParent[pa], sp=spOf(pa), mine=!!S.found[pa];
+      const done=list.filter(o=>S.rcp&&S.rcp[o.i]).length;
+      const open=!!S.rOpen[pa];
+      const hd=document.createElement('div');
+      hd.className='rgroup'+(mine?'':' dim')+(open?' open':'');
+      hd.innerHTML=`<img class="ricon${mine?'':' silh'}" src="${thumb(sp)}">
+        <div style="flex:1;min-width:0">
+          <div class="rn">${mine?nameOf(sp):'???'}<span class="rcnt">${done}/${list.length}</span></div>
+          <div class="rd">${mine?t('rFeedThis'):t('rNotYet')}</div>
+        </div><span class="rarrow">${open?'▾':'▸'}</span>`;
+      hd.onclick=()=>{ S.rOpen[pa]=!open; save(); renderPanel(); };
+      body.appendChild(hd);
+      if(!open) return;                            // 접혀 있으면 자식은 아예 안 만든다
+      list.sort((x,y)=>spOf(y.r.no)[4]-spOf(x.r.no)[4]);
+      list.forEach(({r,i})=>{
+        const known=!!(S.rcp&&S.rcp[i]);
+        const out=spOf(r.no);
+        const ing=id=>{ if(!known)return '<span class="qm">?</span>';
+          const f=foodDef(id);
+          return f.poop?`<img class="ricon" src="${thumb(f.sp)}">`:`<span class="rem">${f.ic}</span>`;};
+        const pity=(S.pity&&S.pity[pityKey(r)])||0;
+        const row=document.createElement('div');row.className='row sub'+(known?' done':'');
+        row.innerHTML=`<div class="rt" style="display:flex;align-items:center;gap:5px">
+            ${r.f.map(ing).join('<b style="color:var(--dim)">+</b>')}
+            <b style="color:var(--dim);margin:0 2px">→</b>
+            <img class="ricon${known?'':' silh'}" src="${thumb(out)}">
+            <div style="flex:1;min-width:0">
+              <div class="rn">${known?nameOf(out):'???'}</div>
+              <div class="rd">${known
+                ? KIND[r.k]+' · '+t('recipeP')(Math.round(effProb(r)*100))
+                  +(pity?' <b style="color:var(--acc)">'+t('pityOn')(pity*5)+'</b>':'')
+                : t('recipeLock')}</div>
+            </div></div>`;
+        body.appendChild(row);
+      });
+    });
+  }
+  else if(TAB==='dex'){
+    const n=dexCount();
+    const h=document.createElement('div');h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:7px';
+    h.innerHTML=`<span style="font-size:12px;font-weight:900">${t('dexHave')(n,SPECIES.length)}</span>
+      <div class="mini" style="flex:1;height:7px"><i style="width:${n/SPECIES.length*100}%"></i></div>`;
+    body.appendChild(h);
+    const dup=Object.values(S.inv).reduce((a,v)=>a+Math.max(0,v-1),0);
+    if(dup>0){
+      const sd=document.createElement('button');sd.className='btn o sm';
+      sd.style.cssText='width:100%;margin-bottom:8px';
+      const tot=Object.keys(S.inv).reduce((a,k)=>a+SELL[spOf(+k)[4]]*Math.max(0,S.inv[k]-1),0);
+      // 수량이 커지면 한 줄로는 넘친다. 이름과 수치를 위아래로 나눈다.
+      sd.innerHTML=`<span class="b1">${t('sellDup')}</span>
+        <span class="b2">${t('nCount')(dup)} · 🪙${num(tot)}</span>`;
+      sd.onclick=sellDuplicates;
+      body.appendChild(sd);
+    }
+    const g=document.createElement('div');g.className='grid5';
+    SPECIES.forEach(s=>{
+      const got=!!S.found[s[0]],have=invCount(s[0]);
+      const d=document.createElement('div');d.className='dcell'+(got?'':' lock');
+      d.innerHTML=`<div class="dot" style="background:${GC[s[4]]}"></div>
+        ${have?`<span class="have">x${have}</span>`:''}
+        <img decoding="async" src="${thumb(s)}" alt=""><div class="dn">${got?nameOf(s):'???'}</div>`;
+      if(got)d.onclick=()=>showDex(s);
+      g.appendChild(d);
+    });
+    body.appendChild(g);
+  }
+  else if(TAB==='shop'&&SHOPSEG==='food'){
+    body.appendChild(adCard('coin')); body.appendChild(adCard('feed'));
+    FOODS.filter(f=>!f.inf&&f.cost>0).forEach(f=>{
+      const r=document.createElement('div');r.className='row';
+      r.innerHTML=`<div class="ri">${f.ic}</div><div class="rt">
+        <div class="rn">${t('foods')[f.id]} x5</div><div class="rd">🪙 ${f.cost*5}</div></div>`;
+      const b=document.createElement('button');b.className='btn sm';b.textContent=t('buy');
+      b.onclick=()=>{const c=f.cost*5;if(S.coins<c)return toast(t('noCoin'));
+        S.coins-=c;S.food[f.id]=(S.food[f.id]||0)+5;sfx('buy');save();renderAll();};
+      r.appendChild(b);body.appendChild(r);
+    });
+  }
+  else if(TAB==='shop'&&SHOPSEG==='gem'){
+    [[10,'₩1,900','$1.99'],[60,'₩9,900','$9.99'],[200,'₩29,000','$29.99']].forEach(([g,kp,ep])=>{
+      const r=document.createElement('div');r.className='row';
+      r.innerHTML=`<div class="ri">💎</div><div class="rt"><div class="rn">${t('gemPack')(g,LANG==='ko'?kp:ep)}</div></div>`;
+      r.appendChild(iapButton('btn g sm'));body.appendChild(r);
+    });
+    body.appendChild(adCard('coin'));
+    { const k=kofiCard(); if(k) body.appendChild(k); }
+  }
+  else if(TAB==='shop'&&SHOPSEG==='deco'){
+    const h1=document.createElement('div');h1.className='rhead';h1.textContent=t('decoBg');
+    body.appendChild(h1);
+    let any=false;
+    THEMES.forEach(th=>{
+      const own=S.themes.includes(th.id);
+      const r=document.createElement('div');r.className='row'+(own?' done':'');
+      r.innerHTML=`<div class="ri">${th.ic}</div><div class="rt"><div class="rn">${t('themes')[th.id]}</div>
+        <div class="rd">${own?t('own'):(th.cur==='gem'?'💎 '+th.cost:'🪙 '+num(th.cost))}</div></div>`;
+      const b2=document.createElement('button');b2.className='btn sm'+(own?' ghost':'');
+      b2.textContent=own?t('own'):t('buy'); b2.disabled=own;
+      b2.onclick=()=>{
+        if(th.cur==='gem'){if(S.gems<th.cost)return toast(t('noGem'));S.gems-=th.cost;}
+        else{if(S.coins<th.cost)return toast(t('noCoin'));S.coins-=th.cost;}
+        S.themes.push(th.id);S.theme=th.id;save();renderAll();
+        sfx('buy');toast(t('boughtBg')(t('themes')[th.id]));};   // 배경은 수량이 없다 — (×1)을 붙이면 이상하다
+      r.appendChild(b2);body.appendChild(r); any=true;
+    });
+    const h2=document.createElement('div');h2.className='rhead';h2.textContent=t('decoObj');
+    body.appendChild(h2);
+    OBJECTS.forEach(o=>{
+      const own=objOwned(o.id), quest=o.cur==='quest';
+      const r=document.createElement('div');r.className='row'+(own?' done':'');
+      r.innerHTML=`<div class="ri"><img src="assets/obj/${o.id}.webp" style="width:30px;height:30px;object-fit:contain"
+          onerror="this.replaceWith(document.createTextNode('${o.ic}'))"></div>
+        <div class="rt"><div class="rn">${t('objs')[o.id]}
+          ${own?`<span class="rcnt">×${own}</span>`:''}
+          <span class="ogr g${o.g}">${t('objG')[o.g]}</span></div>
+        <div class="rd">${quest?'🎯 '+t('questOnly')
+            :(o.cur==='gem'?'💎 '+o.cost:'🪙 '+num(o.cost))} · ${t('objSize')(Math.round(o.sz*100))}</div></div>`;
+      const b2=document.createElement('button');b2.className='btn sm'+(quest?' ghost':'');
+      b2.textContent=quest?'🎯':t('buy'); b2.disabled=quest;
+      b2.onclick=()=>objBuy(o);
+      r.appendChild(b2);body.appendChild(r);
+    });
+  }
+  else if(TAB==='quest'){
+    rollDaily();
+    const sec=(title)=>{const h=document.createElement('div');
+      h.style.cssText='font-size:12px;font-weight:900;color:var(--brownD);margin:4px 0 6px';
+      h.textContent=title;body.appendChild(h);};
+    sec(t('qTut'));
+    t('tut').forEach((q,i)=>{
+      const done=S.tut>i;
+      const r=document.createElement('div');r.className='row'+(done?' done':'');
+      r.innerHTML=`<div class="ri">${done?'✅':TUT_IC[i]}</div>
+        <div class="rt"><div class="rn">${q}</div>
+        <div class="rd">${done?t('claimed'):'🪙 60'}</div></div>`;
+      body.appendChild(r);
+    });
+    const hrs=24-new Date().getHours();
+    sec(t('qDaily')+' · '+t('qReset')(hrs));
+    t('daily').forEach((q,i)=>{
+      const pr=Math.min(S.daily.p[i]||0,DAILY_GOAL[i]),done=dailyDone(i),got=S.daily.c[i];
+      const rw=DAILY_REWARD[i];
+      const r=document.createElement('div');r.className='row'+(got?' done':'');
+      r.innerHTML=`<div class="ri">${got?'✅':DAILY_IC[i]}</div><div class="rt">
+        <div class="rn">${q}</div>
+        <div class="rd">${pr} / ${DAILY_GOAL[i]} · ${rw.g?'💎 '+rw.g:'🪙 '+rw.c}
+        <div class="mini"><i style="width:${pr/DAILY_GOAL[i]*100}%"></i></div></div></div>`;
+      if(done&&!got){const b=document.createElement('button');b.className='btn o sm';b.textContent=t('claim');
+        b.onclick=()=>{S.daily.c[i]=1;if(rw.c)S.coins+=rw.c;if(rw.g)S.gems+=rw.g;save();renderAll();};
+        r.appendChild(b);}
+      body.appendChild(r);
+    });
+    sec(t('qAch'));
+    ACH.forEach(a=>{
+      const locked=S.lv<a.lv, tier=achTier(a), got=achClaimed(a);
+      const maxed=got>=a.steps.length;
+      const goal=a.steps[Math.min(got,a.steps.length-1)];
+      // 진행도를 목표에 맞춰 자른다. 안 그러면 num()이 한쪽만 축약해
+      // '100.0k / 1,000'처럼 진행도가 목표보다 작아 보인다 (일일 퀘스트는 이미 자르고 있다)
+      const vRaw=statVal(a.st), v=Math.min(vRaw, a.steps[Math.min(got,a.steps.length-1)]);
+      const r=document.createElement('div');r.className='row'+(maxed?' done':'');
+      const prog=Math.min(100, v/goal*100);
+      r.innerHTML=`<div class="ri">${locked?'🔒':a.ic}</div><div class="rt">
+        <div class="rn">${t('ach')[a.id]}${maxed?'':` <span style="color:var(--dim);font-weight:700">${Math.min(got+1,a.steps.length)}/${a.steps.length}</span>`}</div>
+        <div class="rd">${locked?t('achLv')(a.lv):(maxed?t('claimed'):`${num(v)} / ${num(goal)} · ${a.rw[got].g?'💎 '+a.rw[got].g:'🪙 '+a.rw[got].c}${a.rw[got].o?' + 🎁'+t('objs')[a.rw[got].o]:''}
+        <div class="mini"><i style="width:${prog}%"></i></div>`)}</div></div>`;
+      if(!locked&&!maxed&&tier>got){
+        const b=document.createElement('button');b.className='btn o sm';b.textContent=t('claim');
+        b.onclick=()=>{const rw=a.rw[got];if(rw.c)S.coins+=rw.c;if(rw.g)S.gems+=rw.g;if(rw.o)grantObj(rw.o);
+          S.ach[a.id]=got+1;save();renderAll();toast(t('claim')+' ✓');};
+        r.appendChild(b);
+      }
+      body.appendChild(r);
+    });
+    sec(t('qLv'));
+    for(let l=S.lvClaim;l<=Math.min(MAX_LV,Math.max(S.lv,S.lvClaim)+2);l++){
+      const can=S.lv>=l&&l>=S.lvClaim, rw=lvReward(l);
+      const ic=rw.uniq?'🏆':(l%50===0?'👑':(l%10===0?'🎊':(l%5===0?'🎀':'🎁')));
+      const r=document.createElement('div');r.className='row'+(rw.uniq?' done':'');
+      r.innerHTML=`<div class="ri">${can?ic:'🔒'}</div><div class="rt">
+        <div class="rn">Lv.${l}${rw.uniq?' · '+t('uniqPick'):''}</div>
+        <div class="rd">🪙 ${num(rw.c)}${rw.g?' · 💎 '+rw.g:''}${rw.uniq?' · '+t('uniqRw'):''}</div></div>`;
+      if(can){const b=document.createElement('button');b.className='btn o sm';b.textContent=t('claim');
+        b.onclick=()=>{S.coins+=rw.c;S.gems+=(rw.g||0);S.lvClaim=l+1;save();
+          if(rw.uniq)showUniqPick();else renderAll();};r.appendChild(b);}
+      body.appendChild(r);
+    }
+  }
+  $('coins').textContent=num(S.coins); $('gems').textContent=num(S.gems);
+}
+// 광고 카드와 같은 결로 만든다 — 상점에서 튀지 않게
+function kofiCard(){
+  if(!KOFI_ID) return null;
+  const el=document.createElement('div'); el.className='adcard kofi';
+  el.innerHTML=`<div class="ai">☕</div><div class="at">
+    <div class="an">${t('kofiT')}</div><div class="ad2">${t('kofiD')}</div></div>`;
+  const b=document.createElement('button'); b.textContent=t('kofiB');
+  b.onclick=()=>window.open(KOFI_URL(),'_blank','noopener');
+  el.appendChild(b); return el;
+}
+function adCard(kind){
+  const el=document.createElement('div');el.className='adcard';
+  const cd=kind==='coin'?300e3:600e3, left=cd-(Date.now()-(S.adcd[kind]||0));
+  el.innerHTML=`<div class="ai">🎬</div><div class="at">
+    <div class="an">${t(kind==='coin'?'adCoin':'adFeed')}</div>
+    <div class="ad2">${t(kind==='coin'?'adCoinD':'adFeedD')}</div></div>`;
+  const b=document.createElement('button');
+  if(left>0){b.textContent=t('cool')(fmt(left));b.disabled=true;}
+  else{b.textContent=t('watch');b.onclick=()=>watchAd(kind);}
+  el.appendChild(b);return el;
+}
+function renderPick(){
+  const cap=slots();
+  [0,1].forEach(i=>{const el=$('p'+i),id=S.pick[i];
+    if(i>=cap){ el.className='slotpick lock'; el.innerHTML='🔒';
+      el.onclick=()=>toast(t('slotLocked')(SLOT_UNLOCK)); return; }
+    if(id){const f=foodDef(id);el.className='slotpick has';
+      el.innerHTML=f.poop?`<img class="pfimg" src="${thumb(f.sp)}" alt="">`:f.ic;}
+    else{el.className='slotpick';el.innerHTML='+';}
+    el.onclick=()=>{ if(S.pick[i]!==undefined){S.pick.splice(i,1);renderPanel();renderPick();} };});
+  const c=S.pens[S.sel], ready=!!(S.open[S.sel]&&c&&!c.feed);
+  $('go').disabled=S.pick.length<1||!ready;
+  $('go').textContent = !c ? t('needParent')
+    // '먹이 주기 → 앵무새똥'은 결과가 앵무새똥이라는 뜻으로 읽혔다.
+    // 어느 똥인지는 위 칸 표시가 이미 말해주니 버튼에서는 뺀다.
+    : (c.feed ? t('busyDigest') : (S.pick.length<1?t('goPick'):t('go')));
+}
+function renderHud(){
+  $('lv').textContent='Lv.'+S.lv+(S.lv>=MAX_LV?' MAX':'');
+  $('xpbar').style.width=(S.exp/needXp(S.lv)*100)+'%';
+  $('coins').textContent=num(S.coins);$('gems').textContent=num(S.gems);
+}
+function renderTabs(){
+  document.querySelectorAll('#tabs button').forEach(b=>{
+    b.classList.toggle('on',b.dataset.tab===TAB);
+    b.classList.toggle('alert', b.dataset.tab==='quest'&&questAlert());
+  });
+  document.querySelectorAll('[data-i]').forEach(el=>{const v=t(el.dataset.i);if(typeof v==='string')el.textContent=v;});
+}
+function renderAll(){
+  document.documentElement.lang=LANG;
+  $('lko').classList.toggle('on',LANG==='ko');$('len').classList.toggle('on',LANG==='en');
+  const home=TAB==='home';
+  $('stage').style.display=home?'':'none';
+  $('prev').style.display=home?'':'none';$('next').style.display=home?'':'none';
+  const pn=$('panel');
+  if(home){ pn.style.flex='0 0 auto'; pn.style.height=''; pn.classList.remove('full'); }
+  else { pn.style.flex='1 1 auto'; pn.style.height='0'; pn.classList.add('full'); }
+  renderHud();renderTabs();renderSeg();renderPanel();renderPick();if(home)renderStage();
+}
+
+/* ════════ 모달 ════════ */
+function closeModal(){$('modal').classList.remove('on');}
+function showCard(sp,isNew){
+  $('mcard').className='card c';
+  $('mcard').innerHTML=`<img class="big" src="${img(sp)}" alt="">
+    <div><span class="cg" style="background:${GC[sp[4]]}">${t('grades')[sp[4]]}</span></div>
+    <h3>${nameOf(sp)}</h3><p class="desc">${(isNew?t('newFound')+'\n':'')+descOf(sp)}</p>`;
+  const b=document.createElement('button');b.className='btn';b.style.width='100%';b.textContent=t('ok');
+  b.onclick=closeModal;$('mcard').appendChild(b);
+  $('modal').classList.add('on');
+}
+function showUniqPick(){
+  const left=UNIQ.filter(n=>!ownUniq().includes(n));
+  if(!left.length){renderAll();return;}
+  $('mcard').className='card c';
+  $('mcard').innerHTML=`<h3 style="margin-top:0">${t('uniqTitle')}</h3>
+    <p class="desc">${t('uniqDesc')}</p>`;
+  const wrap=document.createElement('div');wrap.style.cssText='display:flex;gap:8px;justify-content:center';
+  left.forEach(no=>{
+    const sp=spOf(no);
+    const b=document.createElement('div');
+    b.style.cssText='flex:1;background:#fff;border:2px solid var(--line);border-radius:14px;padding:9px 4px;cursor:pointer';
+    b.innerHTML=`<img src="${img(sp)}" style="width:100%;max-width:74px;height:74px;object-fit:contain">
+      <div style="font-size:11px;font-weight:900;margin-top:3px">${nameOf(sp)}</div>`;
+    b.onclick=()=>{ S.uniq=ownUniq().concat([no]); S.found[no]=true; S.inv[no]=(S.inv[no]||0)+1; checkQuests();
+      save(); closeModal(); renderAll(); showCard(sp,true); };
+    wrap.appendChild(b);
+  });
+  $('mcard').appendChild(wrap);
+  $('modal').classList.add('on');
+}
+function showDex(sp){
+  const have=invCount(sp[0]), g=sp[4], no=sp[0];
+  $('mcard').className='card';
+  // 이 똥을 얻는 길 — 이미 발견한 조합만 공개
+  let how='';
+  const src=RECIPE.map((r,i)=>({r,i})).filter(o=>o.r.no===no);
+  if(g>=SECRET_GRADE){ how=`<p class="desc" style="text-align:center">🔒 ${t('recipeHide')}</p>`; }
+  else if(habitatOf(no)){ how=`<p class="desc" style="text-align:center">🏖️ ${t('habOnly')(t('themes')[habitatOf(no)])}</p>`; }
+  else if(src.length){
+    const rows=src.map(({r,i})=>{
+      const known=!!(S.rcp&&S.rcp[i]);
+      const nm=id=>{const f=foodDef(id);return f?(f.poop?nameOf(f.sp):t('foods')[f.id]):'?';};
+      return `<tr><td>${known?nameOf(spOf(r.pa))+' + '+r.f.map(nm).join(' + ')
+              :'<span class="qmt">'+t('recipeLock')+'</span>'}</td>
+              <td class="r">${known?Math.round(effProb(r)*100)+'%':'?'}</td></tr>`;}).join('');
+    how=`<table class="tbl"><tr><th>${t('recipe')}</th><th style="text-align:right">${t('chance')}</th></tr>${rows}</table>`
+      + (isCraftOnly(no)?`<p class="desc" style="text-align:center;margin-top:6px">🧪 ${t('craftOnly')}</p>`:'');
+  } else {
+    how=`<p class="desc" style="text-align:center">🌿 ${t('wildOnly')}</p>`;
+  }
+  $('mcard').innerHTML=`<div style="text-align:center">
+      <img class="big" src="${img(sp)}" alt="">
+      <div><span class="cg" style="background:${GC[g]}">${t('grades')[g]}</span></div>
+      <h3>${nameOf(sp)} <span style="font-size:13px;color:var(--dim)">${t('haveN')(have)}</span></h3>
+      <p class="desc">${descOf(sp)}</p></div>${how}`;
+
+  // 똥칸에 배치
+  // 칸이 6개면 flex-wrap으로는 줄이 들쭉날쭉해진다. 3열 격자로 고정한다.
+  const pw=document.createElement('div');
+  pw.className='penpick';
+  const lb=document.createElement('div');
+  lb.className='rhead'; lb.style.marginTop='12px';
+  lb.textContent=t('placeTitle'); $('mcard').appendChild(lb);
+  for(let i=0;i<MAX_PENS;i++){
+    if(!S.open[i]) continue;
+    const cur=S.pens[i];
+    const b=document.createElement('button');
+    b.className='btn '+(cur?'ghost':'b')+' sm';
+    b.innerHTML = cur
+      ? `<span class="b1">${i+1}${t('penUnit')}</span><span class="b2">${nameOf(spOf(cur.no))}</span>`
+      : `<span class="b1">${i+1}${t('penUnit')}</span><span class="b2">${t('penEmptyShort')}</span>`;
+    b.disabled=have<1||!!(cur&&cur.feed);
+    b.onclick=()=>placeInPen(no,i);
+    pw.appendChild(b);
+  }
+  $('mcard').appendChild(pw);
+
+  const wrap=document.createElement('div');wrap.style.cssText='display:flex;gap:6px;margin-top:8px;flex-wrap:wrap';
+  const bf=document.createElement('button');bf.className='btn b sm';bf.style.flex='1';
+  bf.textContent=t('toFeed');
+  bf.disabled=have<1; bf.onclick=()=>breakDown(no);
+  wrap.appendChild(bf);
+  const bs=document.createElement('button');bs.className='btn o sm';bs.style.flex='1';
+  bs.textContent=`${t('sell')} 🪙${num(SELL[g])}`;
+  bs.disabled=have<1; bs.onclick=()=>sellPoop(no,1);
+  wrap.appendChild(bs);
+  if(have>1){
+    const ba=document.createElement('button');ba.className='btn o sm';ba.style.flex='1';
+    ba.textContent=`${t('sellAll')(have)} 🪙${num(SELL[g]*have)}`;
+    ba.onclick=()=>sellPoop(no,have);
+    wrap.appendChild(ba);
+  }
+  $('mcard').appendChild(wrap);
+  const bc=document.createElement('button');bc.className='btn ghost';bc.style.cssText='width:100%;margin-top:8px';
+  bc.textContent=t('close');bc.onclick=closeModal;$('mcard').appendChild(bc);
+  $('modal').classList.add('on');
+}
+
+/* ════════ 루프 ════════ */
+setInterval(()=>{
+  tickClock();
+  if(TAB==='home'){
+    const c=S.pens[S.sel];
+    if(c&&c.feed){
+      const fd=c.feed, left=fd.end-Date.now();
+      if(left<=0){ if(!document.querySelector('.poopbtn')) renderStage(); }
+      else{ const el=document.querySelector('.pentime[data-end]');
+        if(el){const ic=fd.pick.map(id=>{const f=foodDef(id);return f?(f.poop?'💩':f.ic):'';}).join('');
+               el.textContent=t('digesting')+' '+ic+' '+fmt(left);}
+        const bar=document.querySelector('.penbar>i');
+        if(bar)bar.style.width=Math.min(100,(Date.now()-fd.start)/(fd.end-fd.start)*100)+'%'; }
+    } else if(!c){
+      const el=document.querySelector('.emptyhint span');
+      if(el)el.textContent=t('wildIn')(fmt(wildLeft()));
+      if(wildLeft()<=0){ wildTick(); save(); renderAll(); }
+    }
+    if(SEG==='feed'){const rg=document.querySelector('#pbody .regen b'); if(rg)rg.textContent=fmt(regenLeft());}
+  }
+  if(TAB==='shop'&&SHOPSEG!=='deco')renderPanel();
+},1000);
+setInterval(save,15000);
+
+/* ════════ 바인딩 ════════ */
+$('helpbtn').onclick=()=>{
+  $('mcard').className='card';
+  $('mcard').innerHTML=`<h3 style="margin-top:0">${t('helpTitle')}</h3><div class="helpbox">${t('help')}</div>`;
+  const br=document.createElement('button');br.className='btn ghost sm';br.style.cssText='width:100%;margin-top:4px';
+  br.textContent=t('reset');
+  br.onclick=()=>{if(confirm(t('resetAsk'))){Store.del(KEY);S=newState();save();closeModal();renderAll();}};
+  const bc=document.createElement('button');bc.className='btn';bc.style.cssText='width:100%;margin-top:8px';
+  bc.textContent=t('close');bc.onclick=closeModal;
+  $('mcard').appendChild(br);$('mcard').appendChild(bc);
+  $('modal').classList.add('on');};
+$('go').onclick=feedPen;
+$('modal').onclick=e=>{if(e.target.id==='modal')closeModal();};
+$('lko').onclick=()=>setLang('ko');$('len').onclick=()=>setLang('en');
+$('snd').onclick=sndToggle; sndLabel();
+function setLang(l){LANG=l;Store.set('poopy_lang',l);renderAll();}  // lang 동기화는 renderAll()이 한다
+$('prev').onclick=()=>{S.sel=(S.sel+MAX_PENS-1)%MAX_PENS;save();renderAll();};
+$('next').onclick=()=>{S.sel=(S.sel+1)%MAX_PENS;save();renderAll();};
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;renderAll();});
+document.querySelectorAll('[data-shop]').forEach(el=>el.onclick=()=>{
+  TAB='shop';SHOPSEG=el.dataset.shop==='gem'?'gem':'food';renderAll();});
+
+document.addEventListener('error',e=>{const el=e.target;
+  if(el&&el.tagName==='IMG'&&el.src.indexOf('data:')!==0){el.src=IMGFB;}},true);
+load();checkQuests();renderAll();
+// 배경을 바꾸면 jpg를 그때 처음 받느라 몇 초 동안 빈 하늘색이 보인다.
+// 첫 화면이 다 그려진 뒤 조용히 나머지를 받아 둔다 (첫 로딩은 방해하지 않는다).
+(()=>{const warm=()=>THEMES.forEach(th=>{const i=new Image();i.src='assets/bg/'+th.id+'.webp';});
+  if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:4000});
+  else setTimeout(warm,2500);})();
+(()=>{let n=0;S.pens.forEach((c,i)=>{if(S.open[i]&&c&&c.feed&&Date.now()>=c.feed.end)n++;});
+  if(n>0)setTimeout(()=>toast(t('offline')(n)),600);})();
+</script>
+</body>
+</html>

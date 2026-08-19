@@ -1,0 +1,155 @@
+<!DOCTYPE html><html lang="en" translate="no"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How Poopy was made — solo devlog</title>
+<meta name="description" content="A solo developer&amp;rsquo;s notes on building Poopy: single-file architecture, runtime-synthesised audio, balancing by simulation, and an honest account of what the AI did.">
+<link rel="canonical" href="https://poopygame.com/devlog.html">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png">
+<meta name="theme-color" content="#6B4423">
+<meta property="og:title" content="How Poopy was made — solo devlog">
+<meta property="og:description" content="A solo developer&amp;rsquo;s notes on building Poopy: single-file architecture, runtime-synthesised audio, balancing by simulation, and an honest account of what the AI did.">
+<meta property="og:image" content="https://poopygame.com/assets/icon/icon-512.png">
+<meta property="og:url" content="https://poopygame.com/devlog.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7085369509523116" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" as="style" crossorigin
+ href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<style>
+:root{--ink:#3A2B1C;--dim:#8A7860;--line:#E6D9C6;--paper:#FFFBF5;--brown:#8B5A2B;--brownD:#4A331E}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;padding:0 0 72px;background:var(--paper);color:var(--ink);
+ font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',
+ 'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;
+ font-size:16px;line-height:1.75;-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding:0 18px}
+header.top{background:linear-gradient(160deg,#7A5528,#4A3018 60%,#2F1E0C);color:#FFF3E2;padding:34px 0 26px;margin-bottom:26px}
+header.top h1{margin:0 0 6px;font-size:30px;letter-spacing:-.5px;line-height:1.2}
+header.top p{margin:0;color:#E8D3B4;font-size:15px}
+nav.bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+nav.bar a{display:inline-block;padding:7px 14px;border-radius:999px;text-decoration:none;
+ font-weight:800;font-size:13px;background:rgba(255,255,255,.12);color:#FFF3E2}
+nav.bar a.play{background:#F2B824;color:#3B2408}
+nav.bar a[aria-current]{background:#FFF3E2;color:#4A331E}
+h2{font-size:22px;margin:44px 0 10px;padding-bottom:8px;border-bottom:2px solid var(--line);color:var(--brownD)}
+h3{font-size:17px;margin:30px 0 6px;color:var(--brownD)}
+p{margin:12px 0}
+a{color:#B26B2E}
+ul,ol{padding-left:22px;margin:12px 0}
+li{margin:6px 0}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#F6EDE0;font-size:13px;color:var(--brownD);white-space:nowrap}
+td.p{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:700}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.g{display:inline-block;padding:1px 8px;border-radius:999px;color:#fff;font-size:11px;font-weight:800;vertical-align:1px}
+.note{background:#FFF6E4;border:1px solid #F0DFC0;border-radius:14px;padding:14px 16px;margin:18px 0}
+.note strong{color:var(--brownD)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin:16px 0}
+.card{border:1px solid var(--line);border-radius:16px;padding:14px;background:#fff}
+.card img{width:76px;height:76px;object-fit:contain;display:block;margin:0 auto 6px}
+.card h4{margin:0 0 2px;font-size:15px;text-align:center}
+.card .gg{text-align:center;margin-bottom:8px}
+.card .d{font-size:13px;color:#6B5B48;margin:0 0 8px;line-height:1.6}
+.card .how{font-size:12.5px;color:var(--dim);border-top:1px dashed var(--line);padding-top:7px;margin:0}
+.toc{background:#F6EDE0;border-radius:14px;padding:12px 18px;margin:18px 0}
+.toc ul{margin:6px 0}
+footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);font-size:13.5px;color:var(--dim)}
+footer a{color:#B26B2E}
+.cta{display:inline-block;margin:8px 8px 0 0;padding:12px 22px;background:#6B4423;color:#fff;
+ border-radius:14px;text-decoration:none;font-weight:800}
+.cta.alt{background:#F2B824;color:#3B2408}
+@media (max-width:520px){body{font-size:15px}header.top h1{font-size:24px}h2{font-size:19px}}
+</style></head><body>
+<header class="top"><div class="wrap"><h1>Devlog</h1><p>One person, one HTML file, and a thirty-day economy simulation.</p><nav class="bar"><a href="index.html" class="play">Play</a><a href="guide.html">Recipe guide</a><a href="species.html">Poopdex</a><a href="devlog.html" aria-current="page">Devlog</a></nav></div></header>
+<main class="wrap">
+
+<p>Poopy is a solo project. One person, one HTML file, no engine. This page is the honest version of how
+it got built &mdash; including the parts that went wrong, because those are the parts worth reading.</p>
+
+<h2>Why a poop collecting game</h2>
+<p>The premise arrived as a joke and refused to leave: what if the pet and the food were the same thing?
+You raise a poop, you feed it, it produces a poop, and that poop becomes feed for the next one. The loop
+closes on itself. Once that clicked, the 46 species and 79 recipes more or less
+designed themselves &mdash; every animal is a joke you already know the punchline to.</p>
+<p>The tone had to stay gentle. A game about excrement can go two ways, and the crude version is the
+boring one. The art is round, pastel and slightly sleepy; the descriptions are affectionate. Nobody is
+being gross at you.</p>
+
+<h2>One file, no engine</h2>
+<p>The entire game is a single <code>index.html</code>: markup, styles and logic in one document, with PNG
+sprites beside it. No build step, no framework, no bundler. That decision paid for itself repeatedly.
+It loads in under a second on a phone, it works offline once cached, it can be dropped onto itch.io as a
+zip without changing a line, and there is exactly one place to look when something breaks.</p>
+<p>Saves go to <code>localStorage</code>. No account, no server, no cloud sync. The trade-off is real and
+worth stating plainly: clear your browser data and your collection is gone, and progress does not follow
+you to another device. In exchange, nobody collects anything about you, and the game costs nothing to run.</p>
+
+<h2>Balancing with a simulation, not a hunch</h2>
+<p>The economy was not tuned by feel. A script plays thirty simulated days &mdash; feeding, waiting,
+selling duplicates, unlocking pens &mdash; and reports where an ordinary player lands. Current numbers:
+roughly <strong>32 of 46 species</strong> collected by day thirty, with the
+<strong>first Legendary on day seven or eight</strong> in every run.</p>
+<p>Two rules came directly out of that simulation:</p>
+<ul>
+<li><strong>Consolation prizes.</strong> Early builds let a failed guaranteed recipe consume rare materials
+for nothing. In the simulation this produced long dead stretches, and in playtesting it just felt mean.
+Now a failure hands you the grade below.</li>
+<li><strong>Pity.</strong> Each consecutive failure on the same recipe adds five percentage points.
+Without it, the tail of the distribution was genuinely cruel &mdash; a small share of simulated players
+sat on a 70% recipe for days.</li>
+</ul>
+
+<h2>Sound with no sound files</h2>
+<p>Every effect &mdash; feeding, pooping, coins, the little fanfare for a new species &mdash; is synthesised
+at runtime with the Web Audio API. There are no audio assets in the project at all. A few oscillators and
+gain envelopes cover the whole game, which keeps the download small and sidesteps sample licensing
+entirely. Browsers refuse to make noise before the first user gesture, so the audio context opens lazily
+on the first tap, and the whole thing is behind a mute button that remembers your choice.</p>
+
+<h2>The bug that hid the tutorial</h2>
+<p>The tutorial has six steps. Step three &mdash; <em>find three species</em> &mdash; had no caller anywhere
+in the codebase. Nothing ever advanced past it, which meant steps four, five and six were unreachable, and
+the sixty coins the interface promised for each step were never actually paid. It survived weeks of manual
+testing because the person testing already knew how to play and never looked at the tutorial panel.</p>
+<p>It was caught by a headless test suite that plays the game with a fake DOM and asserts on the resulting
+state, rather than by a human clicking around. There are now sixteen such suites and roughly 480 assertions
+covering saves, the English translation, layout at small screen sizes, quest logic, and the economy.
+The lesson was not "write more tests" so much as "test the paths you personally never walk".</p>
+
+<h2>The art, and what the AI actually did</h2>
+<p>The 46 character sprites and the four backdrops were generated with Google Gemini against a
+fixed style reference, then hand-picked, background-cleaned and colour-corrected. Most prompts produced
+nothing usable; the keep rate was low enough that the selection work took longer than the generation.
+The code was written with heavy assistance from Claude.</p>
+<p>What is not AI: the design. The 79 recipes, the grade curve, the pity and consolation rules,
+the pacing targets and the economy were planned by hand and verified with the simulation described above.
+Saying so plainly seems better than letting people find out and feel misled &mdash; the same disclosure
+appears on the itch.io page.</p>
+
+<h2>What is next</h2>
+<ul>
+<li><strong>Recipes are too hard to find.</strong> They sit two levels deep, under Poopdex &rarr; Recipes.
+The developer forgot where they were, which is damning. A dedicated bottom tab is the likely fix.</li>
+<li><strong>The make-feed step needs signposting.</strong> It gates most of the interesting content and is
+currently invisible until someone tells you.</li>
+<li><strong>Cloud saves</strong> are the most requested thing that does not exist yet.</li>
+<li><strong>More Mythics.</strong> Three exist; the data layer has room for twelve.</li>
+</ul>
+<p>Feedback goes straight into this list. If you played it and something annoyed you, that is the useful
+kind of message.</p>
+
+<footer>
+<p><a class="cta" href="index.html">Play Poopy free</a> <a class="cta alt" href="https://ko-fi.com/poopygame">Support on Ko-fi</a></p>
+<p>Poopy is a free browser game by a solo developer. Also on
+<a href="https://4fl-06.itch.io/poopy">itch.io</a>.
+&middot; <a href="privacy.html">Privacy policy</a>
+&middot; <a href="guide.html">Recipe guide</a>
+&middot; <a href="species.html">Poopdex</a>
+&middot; <a href="devlog.html">Devlog</a></p>
+<p>Last updated 19 August 2026.</p>
+</footer>
+</main></body></html>
