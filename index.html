@@ -669,7 +669,7 @@ ko:{
  objEdit:'위치 옮기기',objDone:'옮기기 끝내기',objReset:'위치 초기화',
  objDrag:'화면의 소품을 끌어서 옮겨보세요',
  place:'놓기',remove:'치우기',
- lockQ:n=>`도감 ${n}종 모으면 열려요`,lockP:p=>`${p} 구매로 열려요`,
+ lockQ:n=>`도감 ${n}종 모으면 열려요`,lockP:p=>`${p} 구매로 열려요`,lockSoon:'준비 중이에요',
  ORD:['첫째','둘째','셋째','넷째','다섯째','여섯째'],
  penNo:i=>`${T.ko.ORD[i-1]||i+'번'} 칸`,unlocked:'열림',buy:'구매',own:'보유 중',use:'사용 중',equip:'적용',
  iapSoon:'결제는 아직 준비 중이에요.\n출시 때 열립니다.',buySoon:'준비 중',
@@ -770,7 +770,7 @@ en:{
  objEdit:'Move objects',objDone:'Done moving',objReset:'Reset positions',
  objDrag:'Drag the props on the screen to move them',
  place:'Place',remove:'Remove',
- lockQ:n=>`Unlocks at ${n} species`,lockP:p=>`Unlock for ${p}`,
+ lockQ:n=>`Unlocks at ${n} species`,lockP:p=>`Unlock for ${p}`,lockSoon:'Coming soon',
  ORD:['1st','2nd','3rd','4th','5th','6th'],
  penNo:i=>`${T.en.ORD[i-1]||i} pen`,unlocked:'Unlocked',buy:'Buy',own:'Owned',use:'In use',equip:'Apply',
  iapSoon:'Payments are not live yet.\nThey open at launch.',buySoon:'Soon',
@@ -827,7 +827,10 @@ en:{
 <li>First discovery gives <b>double</b> XP</li>
 <li>Special recipes are listed under <b>Dex → Recipes</b></li>
 <li>Digestion continues while the game is closed</li></ol>`}};
-let LANG=Store.get('poopy_lang')||'ko';
+// 저장된 선택이 우선. 처음 온 사람은 브라우저 언어를 본다.
+// 여태 무조건 한국어로 시작했는데, 방문자 대부분이 영어권이라 첫 화면부터 못 읽는 글이 떴다.
+let LANG=Store.get('poopy_lang')
+  || ((navigator.languages||[navigator.language||'']).some(l=>/^ko/i.test(l||'')) ? 'ko' : 'en');
 
 /* ── 효과음 — 샘플 파일 없이 WebAudio로 즉석 합성한다.
    단일 HTML 게임이라 에셋을 늘리지 않는 게 맞고, 라이선스 문제도 없다.
@@ -1190,7 +1193,8 @@ function renderStage(){
      : `${t('penNo')(i+1)}`;}
   if(!S.open[i]){
     const meta=PENS[i];
-    const lab = meta.t==='quest' ? t('lockQ')(meta.need) : t('lockP')(meta.p[LANG]);
+    const lab = meta.t==='quest' ? t('lockQ')(meta.need)
+                 : (IAP_READY ? t('lockP')(meta.p[LANG]) : t('lockSoon'));
     body.innerHTML=`<div class="lockbig"><div class="lk">🔒</div><div class="lt">${lab}</div></div>`;
     if(meta.t==='iap'){const b=iapButton('btn g sm');
       b.style.cssText='position:absolute;left:50%;top:64%;transform:translateX(-50%)';
@@ -1309,11 +1313,17 @@ function speedUp(i,byAd){
 
 /* ════════ 액션 ════════ */
 // 소화 시간 — 부모 등급이 기준이라 결과가 노출되지 않는다. 먹이가 무거우면 조금 더 걸린다
+// 첫 배출만 짧게 — 처음 온 사람은 3분을 못 기다린다.
+// 웹게임 포털은 "1분 이상 논 사람 비율"을 핵심 지표로 본다. 첫 똥이 3분 뒤에 나오면
+// 아무 일도 안 일어난 채로 이탈한다. 한 번만 45초로 줄여 루프를 눈으로 보게 한다.
+const FIRST_DIGEST_MS=45*1000;
 function digestMs(parentGrade, tierSum){
   // 무거운 밥은 오래 걸린다. 흔한 똥이라도 고기를 두 덩이 먹으면 반나절을 소화한다.
   // 부모 등급과 밥의 무게 중 큰 쪽이 시간을 정하므로, 결과 등급은 여전히 드러나지 않는다.
   const g=Math.max(0,Math.min(5,Math.max(parentGrade, tierSum-2)));
-  return Math.round(GT[g]*1000*(1+0.10*tierSum));
+  const ms=Math.round(GT[g]*1000*(1+0.10*tierSum));
+  const first=!S.stat||!S.stat.hatch;          // 아직 한 번도 안 받아봤다
+  return first ? Math.min(ms, FIRST_DIGEST_MS) : ms;
 }
 // 먹이 주기 — 반드시 부모 똥이 앉아 있는 칸에만
 function feedPen(){
@@ -1572,7 +1582,7 @@ function renderPanel(){
       let d='';
       if(!opened) d = meta.t==='quest'
         ? `${t('lockQ')(meta.need)}<div class="mini"><i style="width:${Math.min(100,dexCount()/meta.need*100)}%"></i></div>`
-        : t('lockP')(meta.p[LANG]);
+        : (IAP_READY ? t('lockP')(meta.p[LANG]) : t('lockSoon'));
       else if(!c) d=`${t('penEmpty')} · ${t('wildIn')(fmt(wildLeft()))}`;
       else if(!c.feed) d=`${nameOf(spOf(c.no))} · ${t('feedMe')}`;
       else d = Date.now()>=c.feed.end
