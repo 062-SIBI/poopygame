@@ -1674,7 +1674,7 @@ function renderPanel(){
       const d=document.createElement('div');d.className='dcell'+(got?'':' lock');
       d.innerHTML=`<div class="dot" style="background:${GC[s[4]]}"></div>
         ${have?`<span class="have">x${have}</span>`:''}
-        <img decoding="async" src="${thumb(s)}" alt=""><div class="dn">${got?nameOf(s):'???'}</div>`;
+        <img width="44" height="42" src="${thumb(s)}" alt=""><div class="dn">${got?nameOf(s):'???'}</div>`;
       if(got)d.onclick=()=>showDex(s);
       g.appendChild(d);
     });
